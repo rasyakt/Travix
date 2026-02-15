@@ -18,12 +18,15 @@ class Aircraft extends Model
         'typical_seating_capacity',
         'max_range_km',
         'cruise_speed_kmh',
+        'legroom',
+        'amenities',
     ];
 
     protected $casts = [
         'typical_seating_capacity' => 'integer',
         'max_range_km' => 'integer',
         'cruise_speed_kmh' => 'decimal:2',
+        'amenities' => 'array',
     ];
 
     // Relationships
@@ -56,11 +59,11 @@ class Aircraft extends Model
     public function scopeByCapacity($query, $minCapacity, $maxCapacity = null)
     {
         $query->where('typical_seating_capacity', '>=', $minCapacity);
-        
+
         if ($maxCapacity) {
             $query->where('typical_seating_capacity', '<=', $maxCapacity);
         }
-        
+
         return $query;
     }
 
@@ -79,11 +82,11 @@ class Aircraft extends Model
     public function getTotalSeats($travelClassId = null)
     {
         $query = $this->seatMaps();
-        
+
         if ($travelClassId) {
             $query->where('travel_class_id', $travelClassId);
         }
-        
+
         return $query->count();
     }
 }

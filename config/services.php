@@ -41,9 +41,10 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
-    'aviationstack' => [
-        'api_key' => env('AVIATIONSTACK_API_KEY'),
-        'base_url' => env('AVIATIONSTACK_BASE_URL', 'http://api.aviationstack.com/v1'),
+
+    'serpapi' => [
+        'api_key' => env('SERP_API_KEY'),
+        'base_url' => 'https://serpapi.com/search.json',
     ],
 
 ];

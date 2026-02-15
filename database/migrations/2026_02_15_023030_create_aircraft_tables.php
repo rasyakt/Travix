@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('aircraft_manufacturers', function (Blueprint $table) {
@@ -23,8 +22,10 @@ return new class extends Migration
             $table->integer('typical_seating_capacity');
             $table->integer('max_range_km')->nullable();
             $table->decimal('cruise_speed_kmh', 8, 2)->nullable();
+            $table->string('legroom')->nullable(); // e.g., 30-32 inches
+            $table->json('amenities')->nullable(); // e.g., ["WiFi", "Power", "Entertainment"]
             $table->timestamps();
-            
+
             $table->index('model');
             $table->index('iata_code');
         });
@@ -38,7 +39,7 @@ return new class extends Migration
             $table->year('manufacture_year')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            
+
             $table->index('registration_number');
         });
     }

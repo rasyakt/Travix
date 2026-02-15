@@ -31,6 +31,9 @@
     ::selection {
         @apply bg-blue-100 text-tv-primary;
     }
+    [x-cloak] {
+        display: none !important;
+    }
 }
 
 @layer components {
@@ -55,14 +58,14 @@
 
     /* ── Cards ── */
     .tv-card {
-        @apply bg-white rounded-2xl border border-tv-border shadow-sm overflow-hidden transition-shadow duration-200;
+        @apply bg-white rounded-2xl border border-tv-border shadow-sm overflow-visible transition-shadow duration-200;
     }
     .tv-card-hover {
-        @apply bg-white rounded-2xl border border-tv-border shadow-sm overflow-hidden transition-shadow duration-200
+        @apply bg-white rounded-2xl border border-tv-border shadow-sm overflow-visible transition-shadow duration-200
                hover:shadow-md hover:border-[#d0d8e4];
     }
     .tv-card-interactive {
-        @apply bg-white rounded-2xl border border-tv-border shadow-sm overflow-hidden transition-shadow duration-200
+        @apply bg-white rounded-2xl border border-tv-border shadow-sm overflow-visible transition-shadow duration-200
                hover:shadow-lg hover:border-tv-primary/30 cursor-pointer;
     }
 
@@ -108,5 +111,28 @@
 @layer utilities {
     .text-balance {
         text-wrap: balance;
+    }
+
+    /* ── Custom Animations ── */
+    @keyframes bounce-subtle {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px); }
+    }
+    .animate-bounce-subtle {
+        animation: bounce-subtle 2s infinite ease-in-out;
+    }
+
+    /* ── Custom Scrollbars ── */
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        @apply bg-tv-primary/20 rounded-full;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        @apply bg-tv-primary/40;
     }
 }

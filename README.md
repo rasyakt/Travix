@@ -1,13 +1,13 @@
 # ✈️ Travix - Airlines Reservation System
 
-A comprehensive flight booking and reservation system built with Laravel 12, Livewire, PostgreSQL, and Tailwind CSS. Features real flight data integration via AviationStack API and Google OAuth authentication.
+A comprehensive flight booking and reservation system built with Laravel 12, Livewire, PostgreSQL, and Tailwind CSS. Features real flight data integration via SerpApi (Google Flights) and Google OAuth authentication.
 
 ## 🌟 Features
 
 ### User Features
 
 - **Google OAuth Authentication** - Secure login with Google
-- **Flight Search** - Real-time flight search with AviationStack API integration
+- **Flight Search** - Real-time flight search with SerpApi integration
 - **Multi-Passenger Booking** - Book for multiple passengers with different travel classes
 - **Seat Selection** - Interactive seat map with real-time availability
 - **Baggage Management** - Add extra baggage with automatic price calculation
@@ -15,7 +15,7 @@ A comprehensive flight booking and reservation system built with Laravel 12, Liv
 - **Online Check-in** - Check-in within 24 hours before departure
 - **Digital Boarding Pass** - QR code boarding pass generation
 - **Booking Management** - View, cancel unpaid bookings
-- **Real-time Flight Status** - Live flight status updates
+- **Real-time Flight Status** - Track flight status updates
 
 ### Admin Features (Optional)
 
@@ -29,15 +29,16 @@ A comprehensive flight booking and reservation system built with Laravel 12, Liv
 - Composer
 - Node.js & NPM
 - PostgreSQL 14+
-- Google OAuth Credentials Gmail
-- AviationStack API Key (Free tier available)
+- Google OAuth Credentials
+- SerpApi Key (Optional, for real-time search)
 
 ## 🚀 Installation
 
 ### 1. Clone & Install Dependencies
 
 ```powershell
-cd c:\laragon\www\Travix
+github clone https://github.com/rasyakt/Travix.git
+cd Travix
 composer install
 npm install
 ```
@@ -67,9 +68,8 @@ GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GOOGLE_REDIRECT_URI=http://localhost/auth/google/callback
 
-# AviationStack API
-AVIATIONSTACK_API_KEY=your_api_key
-AVIATIONSTACK_BASE_URL=http://api.aviationstack.com/v1
+# SerpApi (Search)
+SERP_API_KEY=your_serp_api_key
 ```
 
 ### 3. Generate Application Key
@@ -142,11 +142,11 @@ Visit: http://localhost:8000
     - Authorized redirect URIs: `http://localhost:8000/auth/google/callback`
 5. Copy Client ID and Client Secret to `.env`
 
-### AviationStack API Setup
+### SerpApi Setup (Search)
 
-1. Register at [AviationStack](https://aviationstack.com/)
-2. Get your free API key (100 requests/month)
-3. Add to `.env` as `AVIATIONSTACK_API_KEY`
+1. Register at [SerpApi](https://serpapi.com/)
+2. Get your API key
+3. Add to `.env` as `SERP_API_KEY`
 
 ## 📁 Project Structure
 
@@ -174,7 +174,7 @@ Travix/
 │   │   └── UserDashboard.php
 │   ├── Models/          # 20 Eloquent models
 │   └── Services/
-│       ├── AviationStackService.php
+│       ├── SerpApiFlightService.php
 │       └── QRCodeService.php
 ├── database/
 │   ├── migrations/      # 17 migration files
@@ -194,14 +194,10 @@ Travix/
 ### Core Tables
 
 - **users** - User accounts (Google OAuth)
-- **airlines** - Airline information
-- **airports** - Airport details with IATA codes
-- **aircraft_manufacturers** / **aircraft** / **aircraft_instances** - Aircraft management
-- **travel_classes** - Economy, Business, First Class
-- **seat_maps** - Seat configurations per aircraft
-- **schedules** - Recurring flight schedules
-- **flights** - Individual flight instances
-- **flight_seat_prices** - Dynamic pricing per class
+- **airlines** / **airports** / **aircraft** - Flight infrastructure
+- **schedules** / **flights** - Flight operations
+- **bookings** / **passengers** / **payments** - Reservation data
+- **flight_status_logs** - Manual status change history
 
 ### Booking Tables
 
@@ -284,15 +280,10 @@ if ($departureTime->diffInHours($now) > 24) // H-24 rule
 ### Manual Testing Checklist
 
 1. ✅ Google OAuth login/logout
-2. ✅ Flight search (requires API key)
-3. ✅ Create booking with passengers
-4. ✅ Seat selection
-5. ✅ Add baggage
-6. ✅ Process payment
-7. ✅ View booking details
-8. ✅ Check-in (H-24)
-9. ✅ View boarding pass with QR
-10. ✅ Cancel unpaid booking
+2. ✅ Flight search (SerpApi fallback to Database)
+3. ✅ Create booking & Seat selection
+4. ✅ Add baggage & Process payment
+5. ✅ Check-in & Boarding Pass with QR
 
 ## 📦 Packages Used
 
@@ -315,51 +306,3 @@ Open-source under MIT License.
 ## 👨‍💻 Author
 
 Built with ❤️ using Laravel 12, Livewire, and Tailwind CSS.
-
----
-
-## 🆘 Troubleshooting
-
-### Database Connection Error
-
-```powershell
-# Check PostgreSQL is running
-# Verify credentials in .env
-php artisan config:clear
-```
-
-### Seeder Fails
-
-```powershell
-# Clear cache and retry
-php artisan config:clear
-php artisan cache:clear
-php artisan migrate:fresh --seed
-```
-
-### Google OAuth Not Working
-
-- Check redirect URI matches exactly in Google Console
-- Clear browser cookies
-- Verify .env credentials
-
-### AviationStack API Empty Results
-
-- Check API key is valid
-- Free tier limited to 100 requests/month
-- Verify IATA codes are correct (e.g., CGK, DPS)
-
-### Assets Not Loading
-
-```powershell
-npm run build
-php artisan storage:link
-```
-
-## 📞 Support
-
-For issues or questions, please check:
-
-- Laravel Documentation: https://laravel.com/docs/12.x
-- Livewire Documentation: https://livewire.laravel.com/docs
-- AviationStack API Docs: https://aviationstack.com/documentation

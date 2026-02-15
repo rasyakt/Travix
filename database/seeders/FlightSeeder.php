@@ -69,19 +69,23 @@ class FlightSeeder extends Seeder
             $status = FlightStatus::LANDED;
         }
 
-        Flight::create([
-            'schedule_id' => $schedule->id,
-            'aircraft_instance_id' => $aircraftInstanceId,
-            'flight_number' => $schedule->flight_number,
-            'flight_date' => $date->toDateString(),
-            'departure_datetime' => $departureDateTime,
-            'arrival_datetime' => $arrivalDateTime,
-            'status' => $status,
-            'available_seats' => $totalSeats,
-            'current_price' => $schedule->base_price,
-            'gate' => $this->generateGate(),
-            'terminal' => $this->generateTerminal($schedule->origin_airport_id),
-        ]);
+        Flight::updateOrCreate(
+            [
+                'schedule_id' => $schedule->id,
+                'flight_date' => $date->toDateString(),
+            ],
+            [
+                'aircraft_instance_id' => $aircraftInstanceId,
+                'flight_number' => $schedule->flight_number,
+                'departure_datetime' => $departureDateTime,
+                'arrival_datetime' => $arrivalDateTime,
+                'status' => $status,
+                'available_seats' => $totalSeats,
+                'current_price' => $schedule->base_price,
+                'gate' => $this->generateGate(),
+                'terminal' => $this->generateTerminal($schedule->origin_airport_id),
+            ]
+        );
     }
 
     private function generateGate(): string

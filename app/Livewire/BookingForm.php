@@ -10,6 +10,7 @@ use App\Models\TravelClass;
 use App\Models\Payment;
 use App\Enums\BookingStatus;
 use App\Enums\PaymentStatus;
+use App\Models\BookingFlight;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +22,7 @@ class BookingForm extends Component
     public $passengers = [];
     public $numberOfPassengers = 1;
     public $totalPrice = 0;
+    public $contactName = '';
     public $contactEmail = '';
     public $contactPhone = '';
 
@@ -31,18 +33,20 @@ class BookingForm extends Component
         'passengers.*.date_of_birth' => 'required|date|before:today',
         'passengers.*.passport_number' => 'nullable|string|max:50',
         'passengers.*.nationality' => 'required|string|max:100',
+        'contactName' => 'required|string|max:255',
         'contactEmail' => 'required|email',
         'contactPhone' => 'required|string|max:20',
     ];
 
-    public function mount($flightId, $passengers = 1)
+    public function mount($flightId, $passengerCount = 1)
     {
-        $this->flight = Flight::with(['airline', 'originAirport', 'destinationAirport', 'flightSeatPrices.travelClass'])
+        $this->flight = Flight::with(['schedule.airline', 'schedule.originAirport', 'schedule.destinationAirport', 'seatPrices.travelClass'])
             ->findOrFail($flightId);
-        
-        $this->numberOfPassengers = max(1, min(9, $passengers));
+
+        $this->numberOfPassengers = max(1, min(9, $passengerCount));
+        $this->contactName = auth()->user()->name ?? '';
         $this->contactEmail = auth()->user()->email ?? '';
-        
+
         // Initialize passenger array
         for ($i = 0; $i < $this->numberOfPassengers; $i++) {
             $this->passengers[] = [
@@ -55,10 +59,10 @@ class BookingForm extends Component
         }
 
         // Load available travel classes for this flight
-        $this->travelClasses = $this->flight->flightSeatPrices()
+        $this->travelClasses = $this->flight->seatPrices()
             ->with('travelClass')
             ->get()
-            ->map(function($price) {
+            ->map(function ($price) {
                 return [
                     'id' => $price->travel_class_id,
                     'name' => $price->travelClass->name,
@@ -96,22 +100,31 @@ class BookingForm extends Component
             // Create booking
             $booking = Booking::create([
                 'user_id' => auth()->id(),
-                'booking_code' => strtoupper(Str::random(6)),
                 'status' => BookingStatus::PENDING->value,
-                'total_price' => $this->totalPrice,
+                'total_amount' => $this->totalPrice,
+                'base_fare' => $this->totalPrice, // Simplified for now
+                'total_passengers' => $this->numberOfPassengers,
+                'contact_name' => $this->contactName,
                 'contact_email' => $this->contactEmail,
                 'contact_phone' => $this->contactPhone,
             ]);
 
-            // Attach flight to booking
-            $booking->flights()->attach($this->flight->id, [
+            // Attach flight to booking via BookingFlight
+            $bookingFlight = BookingFlight::create([
+                'booking_id' => $booking->id,
+                'flight_id' => $this->flight->id,
                 'travel_class_id' => $this->selectedClassId,
+                'passenger_count' => $this->numberOfPassengers,
+                'price_per_passenger' => $this->totalPrice / $this->numberOfPassengers,
+                'total_price' => $this->totalPrice,
+                'sequence' => 1,
             ]);
 
             // Create passengers
             foreach ($this->passengers as $passengerData) {
                 BookingPassenger::create([
                     'booking_id' => $booking->id,
+                    'booking_flight_id' => $bookingFlight->id,
                     'first_name' => $passengerData['first_name'],
                     'last_name' => $passengerData['last_name'],
                     'date_of_birth' => $passengerData['date_of_birth'],
@@ -124,9 +137,9 @@ class BookingForm extends Component
             Payment::create([
                 'booking_id' => $booking->id,
                 'amount' => $this->totalPrice,
-                'payment_method' => 'pending',
+                'payment_method' => null, // Set during payment process
                 'status' => PaymentStatus::PENDING->value,
-                'transaction_id' => 'TRX-' . strtoupper(Str::random(10)),
+                'payment_code' => 'PAY-' . strtoupper(Str::random(10)),
             ]);
 
             DB::commit();

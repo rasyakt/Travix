@@ -22,7 +22,7 @@ class CheckInProcess extends Component
             'flights.schedule.originAirport',
             'flights.schedule.destinationAirport',
             'passengers.seatAssignment.seatMap',
-            'passengers.checkIn'
+            'passengers.boardingPass'
         ])->findOrFail($bookingId);
 
         $this->passengers = $this->booking->passengers;
@@ -79,13 +79,21 @@ class CheckInProcess extends Component
                 }
 
                 // Create check-in record
-                $checkIn = CheckIn::create([
-                    'booking_passenger_id' => $passenger->id,
-                    'checked_in_at' => now(),
-                ]);
+                $flight = $this->booking->flights->first();
+                // Note: The unique index on booking_id/flight_id suggests one check-in record per flight per booking
+                $checkIn = CheckIn::firstOrCreate(
+                    [
+                        'booking_id' => $this->booking->id,
+                        'flight_id' => $flight->id,
+                    ],
+                    [
+                        'checked_in_at' => now(),
+                        'check_in_method' => 'online',
+                        'status' => 'completed',
+                    ]
+                );
 
                 // Generate boarding pass
-                $flight = $this->booking->flights->first();
                 $boardingPassData = [
                     'booking_code' => $this->booking->booking_code,
                     'passenger_name' => $passenger->first_name . ' ' . $passenger->last_name,
@@ -101,10 +109,15 @@ class CheckInProcess extends Component
 
                 BoardingPass::create([
                     'check_in_id' => $checkIn->id,
+                    'booking_passenger_id' => $passenger->id,
+                    'boarding_pass_number' => 'BP-' . strtoupper(\Illuminate\Support\Str::random(10)),
+                    'seat_number' => $passenger->seatAssignment->seatMap->seat_number,
                     'barcode' => $this->booking->booking_code . '-' . $passenger->id,
-                    'qr_code' => $qrCode,
+                    'qr_code_data' => $qrCode,
                     'gate' => 'Gate ' . rand(1, 20),
                     'boarding_time' => $flight->departure_datetime->copy()->subMinutes(45),
+                    'generated_at' => now(),
+                    'status' => 'active',
                 ]);
             }
 

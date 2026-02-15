@@ -13,7 +13,7 @@ Route::get('/', function () {
 })->name('home');
 
 // Google OAuth
-Route::get('/auth/google', [SocialiteController::class, 'redirectToGoogle'])->name('auth.google');
+Route::get('/auth/google', [SocialiteController::class, 'redirectToGoogle'])->name('login');
 Route::get('/auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
 Route::post('/logout', [SocialiteController::class, 'logout'])->name('logout');
 
@@ -25,8 +25,6 @@ Route::middleware('auth')->group(function () {
     // Flights
     Route::get('/flights', [FlightController::class, 'index'])->name('flights.index');
     Route::get('/flights/{id}', [FlightController::class, 'show'])->name('flights.show');
-    Route::get('/flights/{id}/status', [FlightController::class, 'status'])->name('flights.status');
-    Route::post('/flights/{id}/update-status', [FlightController::class, 'updateStatus'])->name('flights.update-status');
 
     // Bookings
     Route::get('/booking/create', [BookingController::class, 'create'])->name('booking.create');

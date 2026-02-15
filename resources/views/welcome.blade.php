@@ -4,9 +4,9 @@
 
 @section('content')
     {{-- ═══ Hero Section ═══ --}}
-    <div class="relative overflow-hidden">
+    <div class="relative">
         {{-- Background --}}
-        <div class="absolute inset-0 bg-linear-to-br from-tv-primary via-[#0560c7] to-tv-secondary">
+        <div class="absolute inset-0 bg-linear-to-br from-tv-primary via-[#0560c7] to-tv-secondary overflow-hidden">
             <div class="absolute inset-0 opacity-[0.07]" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;1&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
             {{-- Abstract Shape --}}
             <div class="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-white/5"></div>
@@ -28,28 +28,9 @@
             </div>
 
             {{-- Search Box --}}
-            <div class="max-w-4xl mx-auto">
-                <div class="bg-white rounded-2xl shadow-2xl shadow-blue-900/20 overflow-hidden">
-                    {{-- Product Tabs --}}
-                    <div class="flex border-b border-tv-border">
-                        <button class="flex items-center gap-2 px-6 py-4 border-b-2 border-tv-primary text-tv-primary font-bold text-sm bg-blue-50/50">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
-                            </svg>
-                            Flights
-                        </button>
-                        <button class="flex items-center gap-2 px-6 py-4 text-[#a0aec0] font-semibold text-sm cursor-not-allowed" disabled>
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
-                            </svg>
-                            Hotels
-                        </button>
-                    </div>
-                    {{-- Search Form --}}
-                    <div class="p-6 md:p-8">
-                        @livewire('flight-search', ['minimal' => true])
-                    </div>
-                </div>
+            <div class="max-w-5xl mx-auto">
+                {{-- Search Form --}}
+                @livewire('flight-search', ['minimal' => true])
             </div>
         </div>
     </div>

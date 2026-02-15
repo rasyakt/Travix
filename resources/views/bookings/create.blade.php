@@ -9,6 +9,6 @@
             <p class="tv-section-subtitle">Enter passenger details and choose your class</p>
         </div>
 
-        @livewire('booking-form', ['flightId' => $flightId, 'passengers' => $passengers])
+        @livewire('booking-form', ['flightId' => $flightId, 'passengerCount' => $passengers])
     </div>
 @endsection

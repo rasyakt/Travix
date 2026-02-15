@@ -80,16 +80,16 @@
                     </div>
 
                     {{-- Baggage --}}
-                    @if($booking->baggages->count() > 0)
+                    @if($booking->baggage->count() > 0)
                         <div>
                             <h3 class="tv-label text-[9px] mb-2.5">Additional Baggage</h3>
                             <div class="space-y-2">
-                                @foreach($booking->baggages as $baggage)
+                                @foreach($booking->baggage as $baggage)
                                     <div
                                         class="flex justify-between items-center bg-tv-bg p-3 rounded-xl border border-tv-border">
-                                        <p class="text-sm text-tv-text font-medium">{{ $baggage->weight }}kg</p>
+                                        <p class="text-sm text-tv-text font-medium">{{ $baggage->weight_kg }}kg</p>
                                         <span class="text-sm font-bold text-tv-text">Rp
-                                            {{ number_format($baggage->price, 0, ',', '.') }}</span>
+                                            {{ number_format($baggage->fee, 0, ',', '.') }}</span>
                                     </div>
                                 @endforeach
                             </div>
@@ -141,10 +141,10 @@
                                 <span class="font-bold">Rp {{ number_format($booking->passengers->sum('ticket_price'), 0, ',', '.') }}</span>
                             </div>
 
-                            @if($booking->baggages->count() > 0)
+                            @if($booking->baggage->count() > 0)
                                 <div class="flex justify-between">
                                     <span class="text-white/60">Baggage</span>
-                                    <span class="font-bold">Rp {{ number_format($booking->baggages->sum('price'), 0, ',', '.') }}</span>
+                                    <span class="font-bold">Rp {{ number_format($booking->baggage->sum('fee'), 0, ',', '.') }}</span>
                                 </div>
                             @endif
                             <div class="flex justify-between">
@@ -153,13 +153,13 @@
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-white/60">Tax (10%)</span>
-                                <span class="font-bold">Rp {{ number_format(($booking->passengers->sum('ticket_price') + $booking->baggages->sum('price')) * 0.1, 0, ',', '.') }}</span>
+                                <span class="font-bold">Rp {{ number_format(($booking->passengers->sum('ticket_price') + $booking->baggage->sum('fee')) * 0.1, 0, ',', '.') }}</span>
                             </div>
 
                             <div class="border-t border-white/20 pt-3 mt-3">
                                 <div class="flex justify-between items-end">
                                     <span class="text-white/60 text-xs">Total</span>
-                                    <span class="text-xl font-extrabold">Rp {{ number_format($booking->total_price, 0, ',', '.') }}</span>
+                                    <span class="text-xl font-extrabold">Rp {{ number_format($booking->total_amount, 0, ',', '.') }}</span>
                                 </div>
                             </div>
                         </div>

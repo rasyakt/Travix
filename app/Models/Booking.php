@@ -5,7 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
@@ -45,12 +47,12 @@ class Booking extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($booking) {
             if (empty($booking->booking_code)) {
-                $booking->booking_code = 'TRV-' . strtoupper(Str::random(8));
+                $booking->booking_code = (string) Str::uuid();
             }
-            
+
             if (empty($booking->booking_date)) {
                 $booking->booking_date = now();
             }
@@ -73,6 +75,13 @@ class Booking extends Model
         return $this->hasMany(BookingFlight::class)->orderBy('sequence');
     }
 
+    public function flights(): BelongsToMany
+    {
+        return $this->belongsToMany(Flight::class, 'booking_flights')
+            ->withPivot(['travel_class_id', 'sequence', 'segment_type', 'passenger_count', 'price_per_passenger', 'total_price'])
+            ->withTimestamps();
+    }
+
     public function passengers(): HasMany
     {
         return $this->hasMany(BookingPassenger::class);
@@ -86,6 +95,11 @@ class Booking extends Model
     public function checkIns(): HasMany
     {
         return $this->hasMany(CheckIn::class);
+    }
+
+    public function baggage(): HasManyThrough
+    {
+        return $this->hasManyThrough(Baggage::class, BookingPassenger::class);
     }
 
     // Scopes
@@ -112,7 +126,7 @@ class Booking extends Model
     public function scopeExpired($query)
     {
         return $query->where('status', 'pending')
-                     ->where('expires_at', '<', now());
+            ->where('expires_at', '<', now());
     }
 
     public function scopeByUser($query, $userId)
@@ -126,6 +140,11 @@ class Booking extends Model
     }
 
     // Accessors
+    public function getFlightAttribute()
+    {
+        return $this->flights->first();
+    }
+
     public function getIsExpiredAttribute()
     {
         if ($this->status !== 'pending') {
@@ -153,28 +172,28 @@ class Booking extends Model
 
         // Check if first flight is more than 24 hours away
         $firstFlight = $this->bookingFlights()->first()?->flight;
-        
+
         if (!$firstFlight) {
             return false;
         }
 
-        return $firstFlight->departure_datetime->isFuture() && 
-               $firstFlight->departure_datetime->diffInHours(now()) > 24;
+        return $firstFlight->departure_datetime->isFuture() &&
+            $firstFlight->departure_datetime->diffInHours(now()) > 24;
     }
 
     public function getTotalPriceWithFeesAttribute()
     {
-        return $this->base_fare + 
-               $this->taxes_fees + 
-               $this->baggage_fee + 
-               $this->seat_fee;
+        return $this->base_fare +
+            $this->taxes_fees +
+            $this->baggage_fee +
+            $this->seat_fee;
     }
 
     // Methods
     public function canBeCancelled()
     {
-        return in_array($this->status, ['pending', 'confirmed']) && 
-               !$this->is_expired;
+        return in_array($this->status, ['pending', 'confirmed']) &&
+            !$this->is_expired;
     }
 
     public function canCheckIn()
@@ -185,13 +204,13 @@ class Booking extends Model
 
         // Check if within check-in window (24 hours to 3 hours before departure)
         $firstFlight = $this->bookingFlights()->first()?->flight;
-        
+
         if (!$firstFlight) {
             return false;
         }
 
         $hoursUntilDeparture = $firstFlight->departure_datetime->diffInHours(now());
-        
+
         return $hoursUntilDeparture <= 24 && $hoursUntilDeparture >= 3;
     }
 

@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('schedules', function (Blueprint $table) {
@@ -24,7 +23,7 @@ return new class extends Migration
             $table->decimal('base_price', 10, 2);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            
+
             $table->index('flight_number');
             $table->index(['origin_airport_id', 'destination_airport_id']);
         });
@@ -37,13 +36,13 @@ return new class extends Migration
             $table->date('flight_date');
             $table->dateTime('departure_datetime');
             $table->dateTime('arrival_datetime');
-            $table->enum('status', ['scheduled', 'boarding', 'departed', 'in_air', 'landed', 'arrived', 'delayed', 'cancelled'])->default('scheduled');
+            $table->enum('status', ['scheduled', 'active', 'boarding', 'departed', 'in_air', 'landed', 'arrived', 'delayed', 'cancelled'])->default('scheduled');
             $table->integer('available_seats');
             $table->decimal('current_price', 10, 2); // Dynamic pricing
             $table->string('gate')->nullable();
             $table->string('terminal')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['schedule_id', 'flight_date']);
             $table->index('flight_number');
             $table->index('flight_date');

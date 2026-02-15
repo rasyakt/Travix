@@ -46,7 +46,7 @@ class SeatSelection extends Component
         $aircraftId = $this->flight->schedule->aircraft_id;
 
         // Get flight seat prices
-        $flightSeatPrices = FlightSeatPrice::where('flight_id', $this->flight->id)
+        $flightSeatPrices = $this->flight->seatPrices()
             ->with('travelClass')
             ->get();
 
@@ -85,9 +85,7 @@ class SeatSelection extends Component
             ->get();
 
         // Get occupied seats for this flight
-        $occupiedSeats = SeatAssignment::whereHas('bookingPassenger.booking', function ($query) {
-            $query->where('flight_id', $this->flight->id);
-        })
+        $occupiedSeats = SeatAssignment::where('flight_id', $this->flight->id)
             ->pluck('seat_map_id')
             ->toArray();
 
@@ -168,9 +166,23 @@ class SeatSelection extends Component
             foreach ($this->selectedSeats as $index => $seatId) {
                 $passenger = $this->passengers[$index];
 
+                // Find seat number
+                $seatNumber = '';
+                foreach ($this->seatMap as $row) {
+                    foreach ($row as $s) {
+                        if ($s['id'] == $seatId) {
+                            $seatNumber = $s['number'];
+                            break 2;
+                        }
+                    }
+                }
+
                 SeatAssignment::create([
                     'booking_passenger_id' => $passenger->id,
+                    'flight_id' => $this->flight->id,
                     'seat_map_id' => $seatId,
+                    'seat_number' => $seatNumber,
+                    'assigned_at' => now(),
                 ]);
             }
 

@@ -40,10 +40,31 @@ class BookingPassenger extends Model
     }
     public function checkIn()
     {
-        return $this->hasOne(CheckIn::class, 'booking_passenger_id');
+        return $this->hasOneThrough(
+            CheckIn::class,
+            BoardingPass::class,
+            'booking_passenger_id', // Foreign key on boarding_passes table
+            'id',                   // Foreign key on check_ins table
+            'id',                   // Local key on booking_passengers table
+            'check_in_id'           // Local key on boarding_passes table
+        );
+    }
+    public function boardingPass()
+    {
+        return $this->hasOne(BoardingPass::class, 'booking_passenger_id');
     }
     public function baggage()
     {
         return $this->hasMany(Baggage::class, 'booking_passenger_id');
+    }
+
+    public function travelClass()
+    {
+        return $this->hasOneThrough(TravelClass::class, BookingFlight::class, 'id', 'id', 'booking_flight_id', 'travel_class_id');
+    }
+
+    public function getTicketPriceAttribute()
+    {
+        return $this->bookingFlight->price_per_passenger ?? 0;
     }
 }

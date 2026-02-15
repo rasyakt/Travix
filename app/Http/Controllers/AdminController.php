@@ -31,7 +31,7 @@ class AdminController extends Controller
             'flights.destinationAirport',
             'flights.airline',
             'passengers.seatAssignment',
-            'passengers.checkIn.boardingPass',
+            'passengers.boardingPass.checkIn',
             'passengers.baggage',
             'payment'
         ])->findOrFail($id);

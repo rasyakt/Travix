@@ -1,4 +1,23 @@
 <div>
+    @if (session()->has('success'))
+        <div class="mb-5 p-4 bg-green-50 border border-green-200 text-green-700 rounded-2xl flex items-center gap-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <p class="text-sm font-medium">{{ session('success') }}</p>
+        </div>
+    @endif
+
+    @if (session()->has('error'))
+        <div class="mb-5 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl flex items-center gap-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-sm font-medium">{{ session('error') }}</p>
+        </div>
+    @endif
+
     {{-- ═══ Flight Summary ═══ --}}
     <div class="tv-card p-5 mb-5">
         <div class="flex items-center gap-4 mb-4">
@@ -51,7 +70,7 @@
                 @foreach($travelClasses as $class)
                     <label
                         class="relative flex cursor-pointer rounded-xl border-2 p-4 transition-all
-                            {{ $selectedClassId == $class['id'] ? 'border-tv-primary bg-blue-50/50' : 'border-tv-border hover:border-[#d0d8e4]' }}">
+                                    {{ $selectedClassId == $class['id'] ? 'border-tv-primary bg-blue-50/50' : 'border-tv-border hover:border-[#d0d8e4]' }}">
                         <input type="radio" wire:model.live="selectedClassId" value="{{ $class['id'] }}" class="sr-only">
                         <div class="flex flex-1 flex-col">
                             <span class="font-bold text-tv-text text-sm">{{ $class['name'] }}</span>
@@ -131,7 +150,13 @@
         {{-- ═══ Contact ═══ --}}
         <div class="tv-card p-5">
             <h2 class="font-bold text-tv-text mb-4">Contact Information</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="tv-label">Full Name</label>
+                    <input type="text" wire:model="contactName" class="tv-input" placeholder="Your Full Name">
+                    @error('contactName') <span class="text-red-500 text-xs mt-1 font-medium">{{ $message }}</span>
+                    @enderror
+                </div>
                 <div>
                     <label class="tv-label">Email Address</label>
                     <input type="email" wire:model="contactEmail" class="tv-input" placeholder="you@example.com">

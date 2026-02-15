@@ -103,7 +103,10 @@ class AirlineSeeder extends Seeder
         ];
 
         foreach ($airlines as $airline) {
-            Airline::create($airline);
+            Airline::updateOrCreate(
+                ['iata_code' => $airline['iata_code']],
+                $airline
+            );
         }
     }
 }

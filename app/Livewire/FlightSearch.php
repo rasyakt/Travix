@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use Livewire\Component;
-use App\Services\AviationStackService;
+use App\Services\SerpApiFlightService;
 use App\Models\Flight;
 use App\Models\Airport;
 use Illuminate\Support\Facades\Log;
@@ -12,38 +12,111 @@ class FlightSearch extends Component
 {
     public $origin = '';
     public $destination = '';
+    public $originSearch = '';
+    public $destinationSearch = '';
+
     public $departureDate = '';
-    public $passengers = 1;
+    public $returnDate = '';
+    public $tripType = 'one-way'; // 'one-way', 'round-trip', 'multi-city'
+    public $seatClass = 'Economy';
+    public $adults = 1;
+    public $children = 0;
+    public $infants = 0;
 
     public $minimal = false;
-
     public $searchResults = [];
     public $searching = false;
+
+    public $originSuggestions = [];
+    public $destinationSuggestions = [];
     public $airports = [];
 
     protected $rules = [
         'origin' => 'required|string|size:3',
         'destination' => 'required|string|size:3|different:origin',
         'departureDate' => 'required|date|after_or_equal:today',
-        'passengers' => 'required|integer|min:1|max:9',
+        'returnDate' => 'nullable|date|after_or_equal:departureDate',
+        'adults' => 'required|integer|min:1|max:9',
+        'children' => 'required|integer|min:0|max:9',
+        'infants' => 'required|integer|min:0|max:9',
     ];
 
     protected $messages = [
-        'origin.required' => 'Please enter origin airport code',
-        'origin.size' => 'Airport code must be 3 characters (IATA code)',
-        'destination.required' => 'Please enter destination airport code',
-        'destination.size' => 'Airport code must be 3 characters (IATA code)',
-        'destination.different' => 'Destination must be different from origin',
-        'departureDate.required' => 'Please select departure date',
-        'departureDate.after_or_equal' => 'Departure date must be today or later',
-        'passengers.required' => 'Please enter number of passengers',
-        'passengers.min' => 'At least 1 passenger required',
-        'passengers.max' => 'Maximum 9 passengers allowed',
+        'origin.required' => 'Asal tidak boleh kosong',
+        'origin.size' => 'Kode bandara harus 3 karakter',
+        'destination.required' => 'Tujuan tidak boleh kosong',
+        'destination.size' => 'Kode bandara harus 3 karakter',
+        'destination.different' => 'Tujuan harus berbeda dari asal',
+        'departureDate.required' => 'Pilih tanggal keberangkatan',
+        'departureDate.after_or_equal' => 'Harus hari ini atau setelahnya',
+        'returnDate.after_or_equal' => 'Harus setelah tanggal berangkat',
     ];
+
+    public function updatedOriginSearch($query)
+    {
+        $this->originSuggestions = $this->getAirports($query);
+    }
+
+    public function updatedDestinationSearch($query)
+    {
+        $this->destinationSuggestions = $this->getAirports($query);
+    }
+
+    protected function getAirports($query)
+    {
+        if (strlen($query) < 1) {
+            return Airport::limit(10)->get()->toArray();
+        }
+
+        $keywords = array_filter(explode(' ', $query));
+        $dbQuery = Airport::query();
+
+        foreach ($keywords as $keyword) {
+            $keyword = strtolower($keyword);
+            $dbQuery->where(function ($q) use ($keyword) {
+                $q->whereRaw('LOWER(iata_code) ILIKE ?', ["%{$keyword}%"])
+                    ->orWhereRaw('LOWER(city) ILIKE ?', ["%{$keyword}%"])
+                    ->orWhereRaw('LOWER(name) ILIKE ?', ["%{$keyword}%"])
+                    ->orWhereRaw('LOWER(country) ILIKE ?', ["%{$keyword}%"]);
+            });
+        }
+
+        return $dbQuery->limit(10)->get()->toArray();
+    }
+
+    public function selectOrigin($iataCode, $name)
+    {
+        $this->origin = $iataCode;
+        $this->originSearch = "$name ($iataCode)";
+        // Don't clear suggestions, just let Alpine hide the dropdown
+    }
+
+    public function selectDestination($iataCode, $name)
+    {
+        $this->destination = $iataCode;
+        $this->destinationSearch = "$name ($iataCode)";
+        // Don't clear suggestions
+    }
+
+    public function refreshOriginSuggestions()
+    {
+        $this->originSuggestions = $this->getAirports($this->originSearch);
+    }
+
+    public function refreshDestinationSuggestions()
+    {
+        $this->destinationSuggestions = $this->getAirports($this->destinationSearch);
+    }
 
     public function mount()
     {
         $this->departureDate = now()->format('Y-m-d');
+        $this->returnDate = now()->addDays(2)->format('Y-m-d');
+
+        // Initial popular suggestions
+        $this->originSuggestions = Airport::limit(10)->get()->toArray();
+        $this->destinationSuggestions = Airport::limit(10)->get()->toArray();
+
         $this->airports = Airport::select('iata_code', 'name', 'city', 'country')
             ->orderBy('name')
             ->limit(100)
@@ -52,12 +125,31 @@ class FlightSearch extends Component
 
     public function searchFlights()
     {
+        // Auto-detect codes if not selected but validly entered
+        if (empty($this->origin) && preg_match('/\(([A-Z]{3})\)$/', $this->originSearch, $matches)) {
+            $this->origin = $matches[1];
+        } elseif (empty($this->origin) && strlen($this->originSearch) === 3) {
+            $this->origin = strtoupper($this->originSearch);
+        }
+
+        if (empty($this->destination) && preg_match('/\(([A-Z]{3})\)$/', $this->destinationSearch, $matches)) {
+            $this->destination = $matches[1];
+        } elseif (empty($this->destination) && strlen($this->destinationSearch) === 3) {
+            $this->destination = strtoupper($this->destinationSearch);
+        }
+
         $this->validate();
 
         $this->searching = true;
         $this->searchResults = [];
 
         try {
+            Log::info('Flight Search Started', [
+                'origin' => $this->origin,
+                'destination' => $this->destination,
+                'date' => $this->departureDate
+            ]);
+
             // Search from database first
             $dbFlights = Flight::with([
                 'schedule.airline',
@@ -96,31 +188,26 @@ class FlightSearch extends Component
                     ];
                 })->toArray();
             } else {
-                // If no results in database, try API (optional)
-                $aviationStack = new AviationStackService();
-                $apiResults = $aviationStack->searchFlights(
+                // If no results in database, try SerpApi (Google Flights)
+                $serpApi = new SerpApiFlightService();
+                $apiResults = $serpApi->searchFlights(
                     strtoupper($this->origin),
                     strtoupper($this->destination),
-                    $this->departureDate
+                    $this->departureDate,
+                    $this->tripType === 'round-trip' ? $this->returnDate : null,
+                    (int) $this->adults,
+                    (int) $this->children,
+                    (int) $this->infants, // Simplified: assuming on lap for infants
+                    0,
+                    $this->getSeatClassId()
                 );
 
                 if (!empty($apiResults)) {
-                    $this->searchResults = collect($apiResults)->map(function ($flight) {
-                        return [
-                            'flight_number' => $flight['flight']['iata'] ?? 'N/A',
-                            'airline' => $flight['airline']['name'] ?? 'Unknown',
-                            'origin' => $flight['departure']['iata'] ?? $this->origin,
-                            'origin_name' => $flight['departure']['airport'] ?? '',
-                            'destination' => $flight['arrival']['iata'] ?? $this->destination,
-                            'destination_name' => $flight['arrival']['airport'] ?? '',
-                            'departure_time' => isset($flight['departure']['scheduled']) ?
-                                date('H:i', strtotime($flight['departure']['scheduled'])) : 'N/A',
-                            'arrival_time' => isset($flight['arrival']['scheduled']) ?
-                                date('H:i', strtotime($flight['arrival']['scheduled'])) : 'N/A',
-                            'status' => $flight['flight_status'] ?? 'scheduled',
-                            'from_api' => true,
-                        ];
-                    })->toArray();
+                    $totalPassengers = (int) $this->adults + (int) $this->children + (int) $this->infants;
+                    $this->searchResults = array_map(function ($flight) use ($totalPassengers) {
+                        $flight['price'] = $totalPassengers > 0 ? ($flight['price'] / $totalPassengers) : $flight['price'];
+                        return $flight;
+                    }, $apiResults);
                 }
             }
 
@@ -142,8 +229,19 @@ class FlightSearch extends Component
     {
         return redirect()->route('booking.create', [
             'flight' => $flightId,
-            'passengers' => $this->passengers
+            'passengers' => $this->adults + $this->children + $this->infants
         ]);
+    }
+
+    protected function getSeatClassId(): int
+    {
+        return match ($this->seatClass) {
+            'Economy' => 1,
+            'Premium Economy' => 2,
+            'Business' => 3,
+            'First Class' => 4,
+            default => 1,
+        };
     }
 
     public function render()

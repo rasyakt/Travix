@@ -32,55 +32,62 @@ class BookingController extends Controller
             DB::beginTransaction();
 
             $flight = Flight::with('schedule')->findOrFail($request->flight_id);
+            $travelClassId = $request->passengers[0]['travel_class_id'] ?? 1; // Fallback to first passenger's class
 
             // Create booking
             $booking = Booking::create([
                 'user_id' => Auth::id(),
-                'booking_code' => strtoupper(Str::random(6)),
                 'contact_name' => $request->contact_name,
                 'contact_email' => $request->contact_email,
                 'contact_phone' => $request->contact_phone,
-                'total_price' => 0,
+                'total_amount' => 0,
+                'base_fare' => 0,
+                'total_passengers' => count($request->passengers),
                 'status' => BookingStatus::PENDING->value,
             ]);
 
+            $totalAmount = 0;
+            $seatPrice = $flight->seatPrices()
+                ->where('travel_class_id', $travelClassId)
+                ->first();
+            $pricePerPax = $seatPrice?->price ?? ($flight->schedule?->base_price ?? 500000);
+            $totalAmount = $pricePerPax * count($request->passengers);
+
             // Create booking-flight relation
-            BookingFlight::create([
+            $bookingFlight = BookingFlight::create([
                 'booking_id' => $booking->id,
                 'flight_id' => $flight->id,
+                'travel_class_id' => $travelClassId,
+                'passenger_count' => count($request->passengers),
+                'price_per_passenger' => $pricePerPax,
+                'total_price' => $totalAmount,
+                'sequence' => 1,
             ]);
-
-            $totalPrice = 0;
 
             // Create passengers
             foreach ($request->passengers as $passengerData) {
-                $seatPrice = $flight->seatPrices()
-                    ->where('travel_class_id', $passengerData['travel_class_id'])
-                    ->first();
-
-                $price = $seatPrice?->price ?? ($flight->schedule?->base_price ?? 500000);
-                $totalPrice += $price;
-
                 BookingPassenger::create([
                     'booking_id' => $booking->id,
-                    'travel_class_id' => $passengerData['travel_class_id'],
-                    'title' => $passengerData['title'],
+                    'booking_flight_id' => $bookingFlight->id,
+                    'title' => $passengerData['title'] ?? 'Mr',
                     'first_name' => $passengerData['first_name'],
                     'last_name' => $passengerData['last_name'],
                     'date_of_birth' => $passengerData['date_of_birth'],
                     'nationality' => $passengerData['nationality'],
                     'passport_number' => $passengerData['passport_number'] ?? null,
-                    'ticket_price' => $price,
                 ]);
             }
 
-            // Update total price
-            $booking->update(['total_price' => $totalPrice]);
+            // Update total amount
+            $booking->update([
+                'total_amount' => $totalAmount,
+                'base_fare' => $totalAmount
+            ]);
 
             // Create payment record
             Payment::create([
                 'booking_id' => $booking->id,
-                'amount' => $totalPrice,
+                'amount' => $totalAmount,
                 'status' => PaymentStatus::PENDING->value,
             ]);
 
@@ -98,11 +105,11 @@ class BookingController extends Controller
     public function show($id)
     {
         $booking = Booking::with([
-            'flights.originAirport',
-            'flights.destinationAirport',
-            'flights.airline',
+            'flights.schedule.originAirport',
+            'flights.schedule.destinationAirport',
+            'flights.schedule.airline',
             'passengers.seatAssignment',
-            'passengers.checkIn.boardingPass',
+            'passengers.boardingPass.checkIn',
             'passengers.baggage',
             'payment'
         ])
@@ -184,7 +191,7 @@ class BookingController extends Controller
         ]);
 
         // Update booking total
-        $booking->increment('total_price', $fee);
+        $booking->increment('total_amount', $fee);
 
         return back()->with('success', 'Baggage added successfully.');
     }
@@ -194,9 +201,9 @@ class BookingController extends Controller
         $booking = Booking::with([
             'passengers.checkIn.boardingPass',
             'passengers.seatAssignment',
-            'flights.originAirport',
-            'flights.destinationAirport',
-            'flights.airline'
+            'flights.schedule.originAirport',
+            'flights.schedule.destinationAirport',
+            'flights.schedule.airline'
         ])
             ->where('user_id', Auth::id())
             ->findOrFail($id);
