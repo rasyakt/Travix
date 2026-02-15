@@ -19,7 +19,13 @@ class UserDashboard extends Component
 
     public function loadBookings()
     {
-        $allBookings = Booking::with(['flights.originAirport', 'flights.destinationAirport', 'flights.airline', 'payment'])
+        $allBookings = Booking::with([
+            'flights.schedule.originAirport',
+            'flights.schedule.destinationAirport',
+            'flights.schedule.airline',
+            'passengers',
+            'payment'
+        ])
             ->where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')
             ->get();
@@ -27,15 +33,15 @@ class UserDashboard extends Component
         $this->bookings = $allBookings;
 
         // Separate upcoming and past flights
-        $this->upcomingFlights = $allBookings->filter(function($booking) {
+        $this->upcomingFlights = $allBookings->filter(function ($booking) {
             $flight = $booking->flights->first();
-            return $flight && $flight->departure_time->isFuture();
-        });
+            return $flight && $flight->departure_datetime->isFuture();
+        })->values();
 
-        $this->pastFlights = $allBookings->filter(function($booking) {
+        $this->pastFlights = $allBookings->filter(function ($booking) {
             $flight = $booking->flights->first();
-            return $flight && $flight->departure_time->isPast();
-        });
+            return $flight && $flight->departure_datetime->isPast();
+        })->values();
     }
 
     public function cancelBooking($bookingId)
@@ -47,13 +53,13 @@ class UserDashboard extends Component
 
             // Check if booking can be cancelled (e.g., at least 24 hours before departure)
             $flight = $booking->flights->first();
-            if ($flight && $flight->departure_time->diffInHours(now()) < 24) {
+            if ($flight && $flight->departure_datetime->diffInHours(now()) < 24) {
                 session()->flash('error', 'Cannot cancel booking less than 24 hours before departure.');
                 return;
             }
 
             $booking->update(['status' => 'cancelled']);
-            
+
             // Update payment status if needed
             if ($booking->payment) {
                 $booking->payment->update(['status' => 'refunded']);

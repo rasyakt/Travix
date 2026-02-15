@@ -23,14 +23,19 @@ class FlightController extends Controller
     public function show($id)
     {
         $flight = Flight::with([
-            'airline',
-            'originAirport',
-            'destinationAirport',
-            'aircraftInstance.aircraft',
-            'flightSeatPrices.travelClass'
+            'schedule.airline',
+            'schedule.originAirport',
+            'schedule.destinationAirport',
+            'schedule.aircraft',
+            'flightSeatPrices.travelClass',
+            'statusLogs' => function ($query) {
+                $query->orderBy('changed_at', 'desc');
+            }
         ])->findOrFail($id);
 
-        return view('flights.show', compact('flight'));
+        $flightSeatPrices = $flight->flightSeatPrices;
+
+        return view('flights.show', compact('flight', 'flightSeatPrices'));
     }
 
     public function status($id)

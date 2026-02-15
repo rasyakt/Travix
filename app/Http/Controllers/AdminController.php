@@ -9,11 +9,6 @@ use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     public function index()
     {
         $bookings = Booking::with([
@@ -50,7 +45,7 @@ class AdminController extends Controller
             $booking = Booking::findOrFail($id);
 
             // Delete related records first
-            $booking->passengers()->each(function ($passenger) {
+            $booking->passengers->each(function (\App\Models\BookingPassenger $passenger) {
                 $passenger->seatAssignment()?->delete();
                 $passenger->checkIn()?->delete();
                 $passenger->baggage()->delete();

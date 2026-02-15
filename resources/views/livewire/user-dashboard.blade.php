@@ -1,152 +1,195 @@
-<div>
-    <!-- Quick Actions -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <a href="{{ route('flights.index') }}" class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Search Flights</h3>
-                    <p class="text-sm text-gray-500">Find your next destination</p>
-                </div>
-            </div>
-        </a>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
-                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">{{ $upcomingFlights->count() }}</h3>
-                    <p class="text-sm text-gray-500">Upcoming Flights</p>
-                </div>
+    {{-- ═══ Welcome Header ═══ --}}
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-extrabold text-[#1a2b49] tracking-tight">My Bookings</h1>
+            <p class="text-sm text-[#687b8e] mt-0.5">Manage your trips and travel history</p>
+        </div>
+        <a href="{{ route('flights.index') }}" class="btn-tv-primary gap-2 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            Book a Flight
+        </a>
+    </div>
+
+    {{-- ═══ Stats Cards ═══ --}}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="tv-card p-5 flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-[#0770e3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-2xl font-extrabold text-[#1a2b49]">{{ $bookings->count() }}</p>
+                <p class="text-xs font-medium text-[#687b8e]">Total Bookings</p>
             </div>
         </div>
-
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 bg-gray-500 rounded-md p-3">
-                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">{{ $pastFlights->count() }}</h3>
-                    <p class="text-sm text-gray-500">Past Flights</p>
-                </div>
+        <div class="tv-card p-5 flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                        d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-2xl font-extrabold text-emerald-600">{{ $upcomingFlights->count() }}</p>
+                <p class="text-xs font-medium text-[#687b8e]">Upcoming</p>
+            </div>
+        </div>
+        <div class="tv-card p-5 flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-[#687b8e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-2xl font-extrabold text-[#687b8e]">{{ $pastFlights->count() }}</p>
+                <p class="text-xs font-medium text-[#687b8e]">Completed</p>
             </div>
         </div>
     </div>
 
-    <!-- Upcoming Flights -->
+    {{-- ═══ Upcoming Flights ═══ --}}
     @if($upcomingFlights->count() > 0)
-    <div class="mb-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-4">Upcoming Flights</h2>
-        <div class="space-y-4">
-            @foreach($upcomingFlights as $booking)
-            @php
-                $flight = $booking->flights->first();
-            @endphp
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex justify-between items-start">
-                    <div class="flex-1">
-                        <div class="flex items-center space-x-2 mb-2">
-                            <span class="px-3 py-1 text-xs font-semibold rounded-full 
-                                {{ $booking->status === 'confirmed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                {{ ucfirst($booking->status) }}
-                            </span>
-                            <span class="text-sm text-gray-500">Booking Code: {{ $booking->booking_code }}</span>
+        <div>
+            <h2 class="tv-section-title text-lg mb-4">Upcoming Flights</h2>
+            <div class="space-y-3">
+                @foreach($upcomingFlights as $booking)
+                    @php $flight = $booking->flights->first(); @endphp
+                    <div class="tv-card-hover p-5">
+                        <div class="flex flex-col md:flex-row gap-5">
+                            {{-- Booking Info --}}
+                            <div class="flex items-center gap-4 md:w-48 flex-shrink-0">
+                                @if($flight->schedule->airline->logo_url)
+                                    <img src="{{ $flight->schedule->airline->logo_url }}"
+                                        alt="{{ $flight->schedule->airline->name }}"
+                                        class="h-9 w-9 rounded-lg object-contain bg-gray-50 p-1">
+                                @else
+                                    <div class="h-9 w-9 rounded-lg bg-blue-50 flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-[#0770e3]" fill="currentColor" viewBox="0 0 20 20">
+                                            <path
+                                                d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                                        </svg>
+                                    </div>
+                                @endif
+                                <div>
+                                    <p class="font-mono font-bold text-[#0770e3] text-sm">{{ $booking->booking_code }}</p>
+                                    <p class="text-xs text-[#687b8e]">{{ $flight->schedule->airline->name }}</p>
+                                </div>
+                            </div>
+
+                            {{-- Route & Date --}}
+                            <div class="flex-1 flex items-center gap-6">
+                                <div>
+                                    <p class="text-lg font-extrabold text-[#1a2b49]">
+                                        {{ $flight->schedule->originAirport->iata_code }}</p>
+                                    <p class="text-[10px] text-[#a0aec0] font-medium">
+                                        {{ $flight->schedule->originAirport->city }}</p>
+                                </div>
+                                <div class="flex-1 flex items-center justify-center">
+                                    <div class="w-2 h-2 rounded-full border-2 border-[#0770e3]"></div>
+                                    <div class="h-px bg-[#e8ecf1] flex-1"></div>
+                                    <svg class="w-4 h-4 text-[#0770e3] mx-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                                    </svg>
+                                    <div class="h-px bg-[#e8ecf1] flex-1"></div>
+                                    <div class="w-2 h-2 rounded-full border-2 border-[#ff5e1f]"></div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-lg font-extrabold text-[#1a2b49]">
+                                        {{ $flight->schedule->destinationAirport->iata_code }}</p>
+                                    <p class="text-[10px] text-[#a0aec0] font-medium">
+                                        {{ $flight->schedule->destinationAirport->city }}</p>
+                                </div>
+                            </div>
+
+                            {{-- Date & Status --}}
+                            <div class="flex items-center gap-4 md:w-56 flex-shrink-0 md:justify-end">
+                                <div class="md:text-right">
+                                    <p class="text-sm font-bold text-[#1a2b49]">
+                                        {{ $flight->departure_datetime->format('M d, Y') }}</p>
+                                    <p class="text-xs text-[#687b8e]">{{ $flight->departure_datetime->format('H:i') }}</p>
+                                </div>
+                                <span
+                                    class="tv-badge {{ $booking->status === 'confirmed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600' }}">
+                                    {{ ucfirst($booking->status) }}
+                                </span>
+                            </div>
                         </div>
-                        
-                        @if($flight)
-                        <h3 class="text-lg font-semibold text-gray-900">{{ $flight->originAirport->city }} → {{ $flight->destinationAirport->city }}</h3>
-                        <p class="text-sm text-gray-600">{{ $flight->airline->name }} - {{ $flight->flight_number }}</p>
-                        <p class="text-sm text-gray-500 mt-2">{{ $flight->departure_time->format('M d, Y H:i') }}</p>
-                        @endif
-                    </div>
-                    
-                    <div class="text-right">
-                        <p class="text-xl font-bold text-blue-600">${{ number_format($booking->total_price, 2) }}</p>
-                        <div class="mt-4 space-x-2">
-                            <a href="{{ route('booking.show', $booking->id) }}" 
-                                class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                View Details
-                            </a>
-                            @if($booking->status !== 'cancelled')
-                            <button wire:click="cancelBooking({{ $booking->id }})" 
-                                wire:confirm="Are you sure you want to cancel this booking?"
-                                class="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50">
-                                Cancel
-                            </button>
+
+                        {{-- Actions --}}
+                        <div class="flex items-center gap-2 mt-4 pt-4 border-t border-[#e8ecf1]">
+                            <a href="{{ route('booking.show', $booking->id) }}" class="btn-tv-outline text-xs py-2 px-4">View
+                                Details</a>
+                            @if(!$booking->passengers->first()->checkIn && $flight->departure_datetime->diffInHours(now()) <= 24 && $flight->departure_datetime->isFuture())
+                                <a href="{{ route('booking.checkIn', $booking->id) }}"
+                                    class="btn-tv-accent text-xs py-2 px-4">Check-in Now</a>
+                            @endif
+                            @if($booking->status === 'pending' && $flight->departure_datetime->diffInHours(now()) >= 24)
+                                <button wire:click="cancelBooking({{ $booking->id }})"
+                                    class="btn-tv-ghost text-xs py-2 px-4 text-red-500 hover:text-red-600 hover:bg-red-50">Cancel</button>
                             @endif
                         </div>
                     </div>
-                </div>
+                @endforeach
             </div>
-            @endforeach
         </div>
-    </div>
-    @endif
-
-    <!-- Past Flights -->
-    @if($pastFlights->count() > 0)
-    <div>
-        <h2 class="text-2xl font-bold text-gray-900 mb-4">Past Flights</h2>
-        <div class="space-y-4">
-            @foreach($pastFlights as $booking)
-            @php
-                $flight = $booking->flights->first();
-            @endphp
-            <div class="bg-gray-50 rounded-lg shadow p-6">
-                <div class="flex justify-between items-start">
-                    <div class="flex-1">
-                        <div class="flex items-center space-x-2 mb-2">
-                            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-800">
-                                Completed
-                            </span>
-                            <span class="text-sm text-gray-500">Booking Code: {{ $booking->booking_code }}</span>
-                        </div>
-                        
-                        @if($flight)
-                        <h3 class="text-lg font-semibold text-gray-700">{{ $flight->originAirport->city }} → {{ $flight->destinationAirport->city }}</h3>
-                        <p class="text-sm text-gray-600">{{ $flight->airline->name }} - {{ $flight->flight_number }}</p>
-                        <p class="text-sm text-gray-500 mt-2">{{ $flight->departure_time->format('M d, Y H:i') }}</p>
-                        @endif
-                    </div>
-                    
-                    <div class="text-right">
-                        <p class="text-lg font-semibold text-gray-600">${{ number_format($booking->total_price, 2) }}</p>
-                        <a href="{{ route('booking.show', $booking->id) }}" 
-                            class="mt-4 inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                            View Details
-                        </a>
-                    </div>
-                </div>
+    @else
+        {{-- Empty State --}}
+        <div class="tv-card p-12 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-5">
+                <svg class="w-8 h-8 text-[#0770e3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
             </div>
-            @endforeach
-        </div>
-    </div>
-    @endif
-
-    @if($bookings->count() === 0)
-    <div class="text-center py-12">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-        </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">No bookings yet</h3>
-        <p class="mt-1 text-sm text-gray-500">Get started by searching for flights.</p>
-        <div class="mt-6">
-            <a href="{{ route('flights.index') }}" 
-                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+            <h3 class="text-lg font-bold text-[#1a2b49] mb-2">No upcoming flights</h3>
+            <p class="text-sm text-[#687b8e] mb-6 max-w-sm mx-auto">Start planning your next trip! Search for flights and
+                book your next adventure.</p>
+            <a href="{{ route('flights.index') }}" class="btn-tv-primary gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
                 Search Flights
             </a>
         </div>
-    </div>
+    @endif
+
+    {{-- ═══ Past Flights ═══ --}}
+    @if($pastFlights->count() > 0)
+        <div>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="tv-section-title text-lg">Travel History</h2>
+                <span class="tv-badge-gray">{{ $pastFlights->count() }} trips</span>
+            </div>
+            <div class="space-y-2">
+                @foreach($pastFlights->take(5) as $booking)
+                    @php $flight = $booking->flights->first(); @endphp
+                    <div class="tv-card p-4 flex items-center gap-4">
+                        @if($flight->schedule->airline->logo_url)
+                            <img src="{{ $flight->schedule->airline->logo_url }}" alt="{{ $flight->schedule->airline->name }}"
+                                class="h-8 w-8 rounded-lg object-contain bg-gray-50 p-1 flex-shrink-0">
+                        @endif
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-[#1a2b49] text-sm truncate">
+                                {{ $flight->schedule->originAirport->city }} → {{ $flight->schedule->destinationAirport->city }}
+                            </p>
+                            <p class="text-xs text-[#a0aec0]">{{ $flight->departure_datetime->format('M d, Y') }}</p>
+                        </div>
+                        <p class="font-mono text-xs text-[#687b8e] hidden sm:block">{{ $booking->booking_code }}</p>
+                        <a href="{{ route('booking.show', $booking->id) }}"
+                            class="text-sm font-semibold text-[#0770e3] hover:text-[#0560c7] transition-colors flex-shrink-0">View</a>
+                    </div>
+                @endforeach
+            </div>
+        </div>
     @endif
 </div>

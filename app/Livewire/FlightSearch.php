@@ -14,6 +14,9 @@ class FlightSearch extends Component
     public $destination = '';
     public $departureDate = '';
     public $passengers = 1;
+
+    public $minimal = false;
+
     public $searchResults = [];
     public $searching = false;
     public $airports = [];
@@ -56,40 +59,39 @@ class FlightSearch extends Component
 
         try {
             // Search from database first
-            $dbFlights = Flight::with(['airline', 'originAirport', 'destinationAirport', 'aircraftInstance.aircraft'])
-                ->where('origin_airport_id', function($query) {
-                    $query->select('id')
-                        ->from('airports')
-                        ->where('iata_code', strtoupper($this->origin))
-                        ->limit(1);
+            $dbFlights = Flight::with([
+                'schedule.airline',
+                'schedule.originAirport',
+                'schedule.destinationAirport',
+                'schedule.aircraft'
+            ])
+                ->whereHas('schedule.originAirport', function ($query) {
+                    $query->where('iata_code', strtoupper($this->origin));
                 })
-                ->where('destination_airport_id', function($query) {
-                    $query->select('id')
-                        ->from('airports')
-                        ->where('iata_code', strtoupper($this->destination))
-                        ->limit(1);
+                ->whereHas('schedule.destinationAirport', function ($query) {
+                    $query->where('iata_code', strtoupper($this->destination));
                 })
-                ->whereDate('departure_time', $this->departureDate)
+                ->whereDate('departure_datetime', $this->departureDate)
                 ->where('status', '!=', 'cancelled')
                 ->get();
 
             if ($dbFlights->isNotEmpty()) {
-                $this->searchResults = $dbFlights->map(function($flight) {
+                $this->searchResults = $dbFlights->map(function ($flight) {
                     return [
                         'id' => $flight->id,
                         'flight_number' => $flight->flight_number,
-                        'airline' => $flight->airline->name ?? 'Unknown',
-                        'airline_logo' => $flight->airline->logo_url ?? null,
-                        'origin' => $flight->originAirport->iata_code ?? $this->origin,
-                        'origin_name' => $flight->originAirport->name ?? '',
-                        'destination' => $flight->destinationAirport->iata_code ?? $this->destination,
-                        'destination_name' => $flight->destinationAirport->name ?? '',
-                        'departure_time' => $flight->departure_time->format('H:i'),
-                        'arrival_time' => $flight->arrival_time->format('H:i'),
-                        'duration' => $flight->departure_time->diffInMinutes($flight->arrival_time),
-                        'price' => $flight->base_price,
+                        'airline' => $flight->schedule->airline->name ?? 'Unknown',
+                        'airline_logo' => $flight->schedule->airline->logo_url ?? null,
+                        'origin' => $flight->schedule->originAirport->iata_code ?? $this->origin,
+                        'origin_name' => $flight->schedule->originAirport->name ?? '',
+                        'destination' => $flight->schedule->destinationAirport->iata_code ?? $this->destination,
+                        'destination_name' => $flight->schedule->destinationAirport->name ?? '',
+                        'departure_time' => $flight->departure_datetime->format('H:i'),
+                        'arrival_time' => $flight->arrival_datetime->format('H:i'),
+                        'duration' => $flight->departure_datetime->diffInMinutes($flight->arrival_datetime),
+                        'price' => $flight->current_price,
                         'available_seats' => $flight->available_seats,
-                        'aircraft' => $flight->aircraftInstance->aircraft->model ?? 'Unknown',
+                        'aircraft' => $flight->schedule->aircraft->model ?? 'Unknown',
                         'status' => $flight->status,
                     ];
                 })->toArray();
@@ -103,7 +105,7 @@ class FlightSearch extends Component
                 );
 
                 if (!empty($apiResults)) {
-                    $this->searchResults = collect($apiResults)->map(function($flight) {
+                    $this->searchResults = collect($apiResults)->map(function ($flight) {
                         return [
                             'flight_number' => $flight['flight']['iata'] ?? 'N/A',
                             'airline' => $flight['airline']['name'] ?? 'Unknown',
@@ -111,9 +113,9 @@ class FlightSearch extends Component
                             'origin_name' => $flight['departure']['airport'] ?? '',
                             'destination' => $flight['arrival']['iata'] ?? $this->destination,
                             'destination_name' => $flight['arrival']['airport'] ?? '',
-                            'departure_time' => isset($flight['departure']['scheduled']) ? 
+                            'departure_time' => isset($flight['departure']['scheduled']) ?
                                 date('H:i', strtotime($flight['departure']['scheduled'])) : 'N/A',
-                            'arrival_time' => isset($flight['arrival']['scheduled']) ? 
+                            'arrival_time' => isset($flight['arrival']['scheduled']) ?
                                 date('H:i', strtotime($flight['arrival']['scheduled'])) : 'N/A',
                             'status' => $flight['flight_status'] ?? 'scheduled',
                             'from_api' => true,

@@ -12,22 +12,23 @@ class FlightSeatPriceSeeder extends Seeder
 {
     public function run(): void
     {
-        $flights = Flight::with('aircraftInstance.aircraft')->get();
+        $flights = Flight::with(['schedule.aircraft'])->get();
         $travelClasses = TravelClass::all();
 
         foreach ($flights as $flight) {
-            if (!$flight->aircraftInstance || !$flight->aircraftInstance->aircraft) {
+            $aircraftId = $flight->schedule?->aircraft_id;
+
+            if (!$aircraftId) {
                 continue;
             }
 
-            $aircraftId = $flight->aircraftInstance->aircraft->id;
-
             foreach ($travelClasses as $travelClass) {
-                $seatMap = SeatMap::where('aircraft_id', $aircraftId)
+                // Count how many seats this aircraft has for this class
+                $seatCount = SeatMap::where('aircraft_id', $aircraftId)
                     ->where('travel_class_id', $travelClass->id)
-                    ->first();
+                    ->count();
 
-                if ($seatMap) {
+                if ($seatCount > 0) {
                     $basePrice = $flight->schedule?->base_price ?? 500000;
                     $price = $basePrice * $travelClass->price_multiplier;
 
@@ -35,6 +36,8 @@ class FlightSeatPriceSeeder extends Seeder
                         'flight_id' => $flight->id,
                         'travel_class_id' => $travelClass->id,
                         'price' => $price,
+                        'available_seats' => $seatCount,
+                        'total_seats' => $seatCount,
                     ]);
                 }
             }

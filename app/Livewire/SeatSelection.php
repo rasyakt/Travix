@@ -6,8 +6,8 @@ use Livewire\Component;
 use App\Models\Booking;
 use App\Models\SeatMap;
 use App\Models\SeatAssignment;
-use App\Models\BookingPassenger;
-use App\Enums\SeatStatus;
+use App\Models\TravelClass;
+use App\Models\FlightSeatPrice;
 use Illuminate\Support\Facades\DB;
 
 class SeatSelection extends Component
@@ -17,12 +17,14 @@ class SeatSelection extends Component
     public $seatMap = [];
     public $selectedSeats = [];
     public $passengers = [];
-    public $currentPassengerIndex = 0;
+    public $travelClasses = [];
+    public $selectedTravelClassId;
+    public $pricePerSeat = 0;
 
     public function mount($bookingId)
     {
-        $this->booking = Booking::with(['flights', 'passengers'])->findOrFail($bookingId);
-        $this->flight = $this->booking->flights->first();
+        $this->booking = Booking::with(['passengers'])->findOrFail($bookingId);
+        $this->flight = $this->booking->flight;
         $this->passengers = $this->booking->passengers;
 
         if (!$this->flight) {
@@ -30,133 +32,152 @@ class SeatSelection extends Component
             return redirect()->route('dashboard');
         }
 
-        // Load seat map
+        // Load available travel classes with pricing
+        $this->loadTravelClasses();
+
+        // Set default class if not selected
+        if (!$this->selectedTravelClassId && !empty($this->travelClasses)) {
+            $this->selectedTravelClassId = $this->travelClasses[0]['id'];
+        }
+    }
+
+    public function loadTravelClasses()
+    {
+        $aircraftId = $this->flight->schedule->aircraft_id;
+
+        // Get flight seat prices
+        $flightSeatPrices = FlightSeatPrice::where('flight_id', $this->flight->id)
+            ->with('travelClass')
+            ->get();
+
+        $this->travelClasses = $flightSeatPrices->map(function ($fsp) {
+            return [
+                'id' => $fsp->travel_class_id,
+                'name' => $fsp->travelClass->name,
+                'code' => $fsp->travelClass->code,
+                'price' => $fsp->price,
+                'available_seats' => $fsp->available_seats,
+            ];
+        })->toArray();
+    }
+
+    public function updatedSelectedTravelClassId()
+    {
+        // Clear selected seats when class changes
+        $this->selectedSeats = [];
         $this->loadSeatMap();
+        $this->calculatePrice();
     }
 
     public function loadSeatMap()
     {
-        $aircraftInstance = $this->flight->aircraftInstance;
-        
-        if (!$aircraftInstance) {
-            $this->seatMap = $this->generateDefaultSeatMap();
+        if (!$this->selectedTravelClassId) {
             return;
         }
 
-        // Get seat map from database
-        $seats = SeatMap::where('aircraft_instance_id', $aircraftInstance->id)
+        $aircraftId = $this->flight->schedule->aircraft_id;
+
+        // Get seats for this aircraft and travel class
+        $seats = SeatMap::where('aircraft_id', $aircraftId)
+            ->where('travel_class_id', $this->selectedTravelClassId)
             ->orderBy('row_number')
-            ->orderBy('seat_letter')
+            ->orderBy('column_letter')
             ->get();
 
-        if ($seats->isEmpty()) {
-            $this->seatMap = $this->generateDefaultSeatMap();
-            return;
-        }
-
         // Get occupied seats for this flight
-        $occupiedSeats = SeatAssignment::whereHas('bookingPassenger.booking.flights', function($query) {
-            $query->where('flights.id', $this->flight->id);
-        })->pluck('seat_number')->toArray();
+        $occupiedSeats = SeatAssignment::whereHas('bookingPassenger.booking', function ($query) {
+            $query->where('flight_id', $this->flight->id);
+        })
+            ->pluck('seat_map_id')
+            ->toArray();
 
         // Organize seats by row
-        $this->seatMap = $seats->groupBy('row_number')->map(function($rowSeats) use ($occupiedSeats) {
-            return $rowSeats->map(function($seat) use ($occupiedSeats) {
-                $seatNumber = $seat->row_number . $seat->seat_letter;
+        $this->seatMap = $seats->groupBy('row_number')->map(function ($rowSeats) use ($occupiedSeats) {
+            return $rowSeats->map(function ($seat) use ($occupiedSeats) {
                 return [
                     'id' => $seat->id,
-                    'number' => $seatNumber,
-                    'letter' => $seat->seat_letter,
-                    'status' => in_array($seatNumber, $occupiedSeats) ? 
-                        SeatStatus::OCCUPIED->value : 
-                        $seat->status,
-                    'travel_class' => $seat->travelClass->name ?? 'Economy',
+                    'number' => $seat->seat_number,
+                    'row' => $seat->row_number,
+                    'column' => $seat->column_letter,
+                    'position' => $seat->position,
+                    'is_exit_row' => $seat->is_exit_row,
+                    'extra_price' => $seat->extra_price,
+                    'is_occupied' => in_array($seat->id, $occupiedSeats),
+                    'is_available' => $seat->is_available && !in_array($seat->id, $occupiedSeats),
                 ];
-            });
+            })->values();
         })->toArray();
     }
 
-    protected function generateDefaultSeatMap()
+    public function selectSeat($seatId)
     {
-        // Generate a simple 30-row, 6-seat (A-F) configuration
-        $map = [];
-        for ($row = 1; $row <= 30; $row++) {
-            $seats = [];
-            foreach (['A', 'B', 'C', 'D', 'E', 'F'] as $letter) {
-                $seats[] = [
-                    'number' => $row . $letter,
-                    'letter' => $letter,
-                    'status' => SeatStatus::AVAILABLE->value,
-                    'travel_class' => $row <= 5 ? 'Business' : 'Economy',
-                ];
-            }
-            $map[$row] = $seats;
-        }
-        return $map;
-    }
-
-    public function selectSeat($seatNumber)
-    {
-        // Check if seat is available
-        $isOccupied = false;
+        // Find the seat
+        $seat = null;
         foreach ($this->seatMap as $row) {
-            foreach ($row as $seat) {
-                if ($seat['number'] === $seatNumber && $seat['status'] === SeatStatus::OCCUPIED->value) {
-                    $isOccupied = true;
+            foreach ($row as $s) {
+                if ($s['id'] == $seatId) {
+                    $seat = $s;
                     break 2;
                 }
             }
         }
 
-        if ($isOccupied) {
-            session()->flash('error', 'This seat is already occupied.');
+        if (!$seat || !$seat['is_available']) {
+            session()->flash('error', 'This seat is not available.');
             return;
         }
 
-        // Check if we need more seats
-        if (count($this->selectedSeats) >= count($this->passengers)) {
-            session()->flash('error', 'All passengers already have seats assigned.');
-            return;
+        // Check if already selected
+        if (in_array($seatId, $this->selectedSeats)) {
+            // Deselect
+            $this->selectedSeats = array_values(array_diff($this->selectedSeats, [$seatId]));
+        } else {
+            // Check if we need more seats
+            if (count($this->selectedSeats) >= count($this->passengers)) {
+                session()->flash('error', 'All passengers already have seats assigned.');
+                return;
+            }
+
+            $this->selectedSeats[] = $seatId;
         }
 
-        // Add seat to selection
-        if (!in_array($seatNumber, $this->selectedSeats)) {
-            $this->selectedSeats[] = $seatNumber;
-            $this->currentPassengerIndex = min($this->currentPassengerIndex + 1, count($this->passengers) - 1);
-        }
+        $this->calculatePrice();
     }
 
-    public function removeSeat($index)
+    public function calculatePrice()
     {
-        unset($this->selectedSeats[$index]);
-        $this->selectedSeats = array_values($this->selectedSeats);
-        $this->currentPassengerIndex = max(0, count($this->selectedSeats) - 1);
+        if (empty($this->travelClasses) || !$this->selectedTravelClassId) {
+            $this->pricePerSeat = 0;
+            return;
+        }
+
+        $selectedClass = collect($this->travelClasses)->firstWhere('id', $this->selectedTravelClassId);
+        $this->pricePerSeat = $selectedClass['price'] ?? 0;
     }
 
     public function confirmSeats()
     {
         if (count($this->selectedSeats) !== count($this->passengers)) {
-            session()->flash('error', 'Please select seats for all passengers.');
+            session()->flash('error', 'Please select seats for all ' . count($this->passengers) . ' passenger(s).');
             return;
         }
 
         try {
             DB::beginTransaction();
 
-            foreach ($this->selectedSeats as $index => $seatNumber) {
+            foreach ($this->selectedSeats as $index => $seatId) {
                 $passenger = $this->passengers[$index];
-                
+
                 SeatAssignment::create([
                     'booking_passenger_id' => $passenger->id,
-                    'seat_number' => $seatNumber,
-                    'assigned_at' => now(),
+                    'seat_map_id' => $seatId,
                 ]);
             }
 
             DB::commit();
 
             session()->flash('success', 'Seats assigned successfully!');
-            return redirect()->route('booking.show', $this->booking->id);
+            return redirect()->route('booking.payment', $this->booking->id);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -167,6 +188,10 @@ class SeatSelection extends Component
 
     public function render()
     {
+        if ($this->selectedTravelClassId && empty($this->seatMap)) {
+            $this->loadSeatMap();
+        }
+
         return view('livewire.seat-selection');
     }
 }

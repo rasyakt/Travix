@@ -3,12 +3,12 @@
 @section('title', 'Create Booking')
 
 @section('content')
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Complete Your Booking</h1>
-        <p class="mt-2 text-gray-600">Enter passenger details to continue</p>
-    </div>
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-6">
+            <h1 class="tv-section-title">Complete Your Booking</h1>
+            <p class="tv-section-subtitle">Enter passenger details and choose your class</p>
+        </div>
 
-    @livewire('booking-form', ['flightId' => $flightId, 'passengers' => $passengers])
-</div>
+        @livewire('booking-form', ['flightId' => $flightId, 'passengers' => $passengers])
+    </div>
 @endsection

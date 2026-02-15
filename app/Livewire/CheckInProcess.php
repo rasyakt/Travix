@@ -18,15 +18,19 @@ class CheckInProcess extends Component
 
     public function mount($bookingId)
     {
-        $this->booking = Booking::with(['flights', 'passengers.seatAssignment', 'passengers.checkIn'])
-            ->findOrFail($bookingId);
-        
+        $this->booking = Booking::with([
+            'flights.schedule.originAirport',
+            'flights.schedule.destinationAirport',
+            'passengers.seatAssignment.seatMap',
+            'passengers.checkIn'
+        ])->findOrFail($bookingId);
+
         $this->passengers = $this->booking->passengers;
-        
+
         // Check if check-in is available (24 hours before departure)
         $flight = $this->booking->flights->first();
         if ($flight) {
-            $hoursUntilDeparture = now()->diffInHours($flight->departure_time, false);
+            $hoursUntilDeparture = now()->diffInHours($flight->departure_datetime, false);
             $this->canCheckIn = $hoursUntilDeparture <= 24 && $hoursUntilDeparture > 0;
         }
     }
@@ -57,7 +61,7 @@ class CheckInProcess extends Component
 
             foreach ($this->selectedPassengers as $passengerId) {
                 $passenger = $this->passengers->find($passengerId);
-                
+
                 if (!$passenger) {
                     continue;
                 }
@@ -86,10 +90,10 @@ class CheckInProcess extends Component
                     'booking_code' => $this->booking->booking_code,
                     'passenger_name' => $passenger->first_name . ' ' . $passenger->last_name,
                     'flight_number' => $flight->flight_number,
-                    'seat_number' => $passenger->seatAssignment->seat_number,
-                    'departure_time' => $flight->departure_time->format('Y-m-d H:i'),
-                    'origin' => $flight->originAirport->iata_code,
-                    'destination' => $flight->destinationAirport->iata_code,
+                    'seat_number' => $passenger->seatAssignment->seatMap->seat_number,
+                    'departure_time' => $flight->departure_datetime->format('Y-m-d H:i'),
+                    'origin' => $flight->schedule->originAirport->iata_code,
+                    'destination' => $flight->schedule->destinationAirport->iata_code,
                 ];
 
                 // Generate QR code
@@ -100,7 +104,7 @@ class CheckInProcess extends Component
                     'barcode' => $this->booking->booking_code . '-' . $passenger->id,
                     'qr_code' => $qrCode,
                     'gate' => 'Gate ' . rand(1, 20),
-                    'boarding_time' => $flight->departure_time->subMinutes(45),
+                    'boarding_time' => $flight->departure_datetime->copy()->subMinutes(45),
                 ]);
             }
 

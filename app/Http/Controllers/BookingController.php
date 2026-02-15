@@ -18,15 +18,10 @@ use Illuminate\Support\Str;
 
 class BookingController extends Controller
 {
-    public function __construct()
+    public function create()
     {
-        $this->middleware('auth');
-    }
-
-    public function create(Request $request)
-    {
-        $flightId = $request->get('flight');
-        $passengers = $request->get('passengers', 1);
+        $flightId = request('flight');
+        $passengers = request('passengers', 1);
 
         return view('bookings.create', compact('flightId', 'passengers'));
     }
