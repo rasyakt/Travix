@@ -10,9 +10,9 @@ return new class extends Migration
     {
         Schema::create('airlines', function (Blueprint $table) {
             $table->id();
-            $table->string('iata_code', 2)->unique();
-            $table->string('icao_code', 3)->unique();
-            $table->string('name');
+            $table->string('iata_code', 2)->unique(); // e.g., GA, SQ
+            $table->string('icao_code', 3)->unique(); // e.g., GIA, SIA
+            $table->string('name'); // e.g., Garuda Indonesia
             $table->string('country');
             $table->string('logo_url')->nullable();
             $table->boolean('is_active')->default(true);

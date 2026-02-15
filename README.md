@@ -1,59 +1,365 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# ✈️ Travix - Airlines Reservation System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A comprehensive flight booking and reservation system built with Laravel 12, Livewire, PostgreSQL, and Tailwind CSS. Features real flight data integration via AviationStack API and Google OAuth authentication.
 
-## About Laravel
+## 🌟 Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### User Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Google OAuth Authentication** - Secure login with Google
+- **Flight Search** - Real-time flight search with AviationStack API integration
+- **Multi-Passenger Booking** - Book for multiple passengers with different travel classes
+- **Seat Selection** - Interactive seat map with real-time availability
+- **Baggage Management** - Add extra baggage with automatic price calculation
+- **Mock Payment System** - Multiple payment methods (Credit Card, Bank Transfer, E-Wallet)
+- **Online Check-in** - Check-in within 24 hours before departure
+- **Digital Boarding Pass** - QR code boarding pass generation
+- **Booking Management** - View, cancel unpaid bookings
+- **Real-time Flight Status** - Live flight status updates
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Admin Features (Optional)
 
-## Learning Laravel
+- **Booking Management** - View and manage all bookings
+- **Flight Status Management** - Manual flight status updates
+- **System Monitoring** - Track booking and flight operations
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## 📋 Prerequisites
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- PHP >= 8.2
+- Composer
+- Node.js & NPM
+- PostgreSQL 14+
+- Google OAuth Credentials Gmail
+- AviationStack API Key (Free tier available)
 
-## Laravel Sponsors
+## 🚀 Installation
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 1. Clone & Install Dependencies
 
-### Premium Partners
+```powershell
+cd c:\laragon\www\Travix
+composer install
+npm install
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### 2. Environment Configuration
 
-## Contributing
+```powershell
+cp .env.example .env
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Edit `.env` and configure:
 
-## Code of Conduct
+```env
+APP_NAME=Travix
+APP_URL=http://localhost
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Database
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=travix
+DB_USERNAME=postgres
+DB_PASSWORD=your_password
 
-## Security Vulnerabilities
+# Google OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost/auth/google/callback
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# AviationStack API
+AVIATIONSTACK_API_KEY=your_api_key
+AVIATIONSTACK_BASE_URL=http://api.aviationstack.com/v1
+```
 
-## License
+### 3. Generate Application Key
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```powershell
+php artisan key:generate
+```
+
+### 4. Create Database
+
+Create PostgreSQL database:
+
+```sql
+CREATE DATABASE travix;
+```
+
+### 5. Run Migrations & Seeders
+
+```powershell
+php artisan migrate:fresh --seed
+```
+
+This will create:
+
+- 15 Airlines (Indonesian & International)
+- 15 Airports (Domestic & International)
+- 5 Aircraft manufacturers & models
+- 12+ Aircraft instances
+- 3 Travel classes (Economy, Business, First Class)
+- 15 Flight schedules
+- 400+ Flights (for next 30 days)
+- Seat maps for all aircraft
+- Flight seat prices
+
+### 6. Create Storage Link
+
+```powershell
+php artisan storage:link
+```
+
+### 7. Build Assets
+
+```powershell
+npm run build
+```
+
+For development:
+
+```powershell
+npm run dev
+```
+
+### 8. Start Development Server
+
+```powershell
+php artisan serve
+```
+
+Visit: http://localhost:8000
+
+## 🔑 Getting API Credentials
+
+### Google OAuth Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable **Google+ API**
+4. Create OAuth 2.0 credentials:
+    - Application type: Web application
+    - Authorized redirect URIs: `http://localhost:8000/auth/google/callback`
+5. Copy Client ID and Client Secret to `.env`
+
+### AviationStack API Setup
+
+1. Register at [AviationStack](https://aviationstack.com/)
+2. Get your free API key (100 requests/month)
+3. Add to `.env` as `AVIATIONSTACK_API_KEY`
+
+## 📁 Project Structure
+
+```
+Travix/
+├── app/
+│   ├── Enums/          # Status enums (Booking, Payment, Flight)
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Auth/
+│   │   │   │   └── SocialiteController.php
+│   │   │   ├── AdminController.php
+│   │   │   ├── BookingController.php
+│   │   │   ├── DashboardController.php
+│   │   │   └── FlightController.php
+│   │   └── Requests/    # Form validation
+│   │       ├── StoreBookingRequest.php
+│   │       ├── UpdateSeatAssignmentRequest.php
+│   │       └── CheckInRequest.php
+│   ├── Livewire/        # Livewire components
+│   │   ├── FlightSearch.php
+│   │   ├── BookingForm.php
+│   │   ├── SeatSelection.php
+│   │   ├── CheckInProcess.php
+│   │   └── UserDashboard.php
+│   ├── Models/          # 20 Eloquent models
+│   └── Services/
+│       ├── AviationStackService.php
+│       └── QRCodeService.php
+├── database/
+│   ├── migrations/      # 17 migration files
+│   └── seeders/         # 8 comprehensive seeders
+├── resources/
+│   └── views/
+│       ├── layouts/
+│       ├── livewire/
+│       ├── bookings/
+│       └── flights/
+└── routes/
+    └── web.php
+```
+
+## 🗄️ Database Schema
+
+### Core Tables
+
+- **users** - User accounts (Google OAuth)
+- **airlines** - Airline information
+- **airports** - Airport details with IATA codes
+- **aircraft_manufacturers** / **aircraft** / **aircraft_instances** - Aircraft management
+- **travel_classes** - Economy, Business, First Class
+- **seat_maps** - Seat configurations per aircraft
+- **schedules** - Recurring flight schedules
+- **flights** - Individual flight instances
+- **flight_seat_prices** - Dynamic pricing per class
+
+### Booking Tables
+
+- **bookings** - Booking master data
+- **booking_passengers** - Passenger details
+- **booking_flights** - Booking-flight relation (many-to-many)
+- **seat_assignments** - Assigned seats
+- **payments** - Payment records
+- **baggage** - Extra baggage
+- **check_ins** - Check-in records
+- **boarding_passes** - Digital boarding passes
+- **flight_status_logs** - Status change history
+
+## 🎯 Usage Guide
+
+### For Users
+
+1. **Login**: Click "Login with Google" on homepage
+2. **Search Flights**: Enter origin, destination, date
+3. **Book Flight**:
+    - Fill passenger details
+    - Select seats
+    - Add baggage (optional)
+    - Complete payment
+4. **Check-in**: Available H-24 before departure
+5. **Boarding Pass**: Download/view QR code boarding pass
+
+### For Admins
+
+Access admin panel at `/admin/bookings` (no authentication middleware yet - add as needed)
+
+## 🔧 Configuration
+
+### Travel Class Price Multipliers
+
+Edit `database/seeders/TravelClassSeeder.php`:
+
+```php
+'Economy' => 1.0x base price
+'Business' => 3.0x base price
+'First Class' => 5.0x base price
+```
+
+### Baggage Pricing
+
+Edit `BookingController::addBaggage()`:
+
+```php
+$fee = $request->weight * 10; // $10 per kg
+```
+
+### Check-in Window
+
+Edit `CheckInRequest.php`:
+
+```php
+if ($departureTime->diffInHours($now) > 24) // H-24 rule
+```
+
+## 🚨 Known Issues & TODOs
+
+### Lint Warnings (Non-breaking)
+
+- Controller middleware call method (works but shows warning)
+- Schedule type hint in FlightSeeder (works but shows warning)
+
+### Future Enhancements
+
+- Admin role middleware
+- Email notifications (booking confirmation, boarding pass)
+- PDF boarding pass export
+- Payment gateway integration (Midtrans SDK already installed)
+- Multi-language support
+- PWA for mobile
+- Seat upgrade functionality
+- Loyalty program
+
+## 🧪 Testing
+
+### Manual Testing Checklist
+
+1. ✅ Google OAuth login/logout
+2. ✅ Flight search (requires API key)
+3. ✅ Create booking with passengers
+4. ✅ Seat selection
+5. ✅ Add baggage
+6. ✅ Process payment
+7. ✅ View booking details
+8. ✅ Check-in (H-24)
+9. ✅ View boarding pass with QR
+10. ✅ Cancel unpaid booking
+
+## 📦 Packages Used
+
+- **laravel/framework** ^12.0 - Core framework
+- **livewire/livewire** ^3.4 - Interactive UI components
+- **laravel/socialite** ^5.12 - Google OAuth
+- **simplesoftwareio/simple-qrcode** ^4.2 - QR code generation
+- **barryvdh/laravel-dompdf** ^3.1 - PDF generation
+- **midtrans/midtrans-php** ^2.5 - Payment gateway (optional)
+- **tailwindcss** ^4.1 - CSS framework
+
+## 🤝 Contributing
+
+This is a demo/portfolio project. Feel free to fork and customize.
+
+## 📝 License
+
+Open-source under MIT License.
+
+## 👨‍💻 Author
+
+Built with ❤️ using Laravel 12, Livewire, and Tailwind CSS.
+
+---
+
+## 🆘 Troubleshooting
+
+### Database Connection Error
+
+```powershell
+# Check PostgreSQL is running
+# Verify credentials in .env
+php artisan config:clear
+```
+
+### Seeder Fails
+
+```powershell
+# Clear cache and retry
+php artisan config:clear
+php artisan cache:clear
+php artisan migrate:fresh --seed
+```
+
+### Google OAuth Not Working
+
+- Check redirect URI matches exactly in Google Console
+- Clear browser cookies
+- Verify .env credentials
+
+### AviationStack API Empty Results
+
+- Check API key is valid
+- Free tier limited to 100 requests/month
+- Verify IATA codes are correct (e.g., CGK, DPS)
+
+### Assets Not Loading
+
+```powershell
+npm run build
+php artisan storage:link
+```
+
+## 📞 Support
+
+For issues or questions, please check:
+
+- Laravel Documentation: https://laravel.com/docs/12.x
+- Livewire Documentation: https://livewire.laravel.com/docs
+- AviationStack API Docs: https://aviationstack.com/documentation

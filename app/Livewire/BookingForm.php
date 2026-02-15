@@ -1,0 +1,151 @@
+<?php
+
+namespace App\Livewire;
+
+use Livewire\Component;
+use App\Models\Flight;
+use App\Models\Booking;
+use App\Models\BookingPassenger;
+use App\Models\TravelClass;
+use App\Models\Payment;
+use App\Enums\BookingStatus;
+use App\Enums\PaymentStatus;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+
+class BookingForm extends Component
+{
+    public $flight;
+    public $travelClasses = [];
+    public $selectedClassId;
+    public $passengers = [];
+    public $numberOfPassengers = 1;
+    public $totalPrice = 0;
+    public $contactEmail = '';
+    public $contactPhone = '';
+
+    protected $rules = [
+        'selectedClassId' => 'required|exists:travel_classes,id',
+        'passengers.*.first_name' => 'required|string|max:255',
+        'passengers.*.last_name' => 'required|string|max:255',
+        'passengers.*.date_of_birth' => 'required|date|before:today',
+        'passengers.*.passport_number' => 'nullable|string|max:50',
+        'passengers.*.nationality' => 'required|string|max:100',
+        'contactEmail' => 'required|email',
+        'contactPhone' => 'required|string|max:20',
+    ];
+
+    public function mount($flightId, $passengers = 1)
+    {
+        $this->flight = Flight::with(['airline', 'originAirport', 'destinationAirport', 'flightSeatPrices.travelClass'])
+            ->findOrFail($flightId);
+        
+        $this->numberOfPassengers = max(1, min(9, $passengers));
+        $this->contactEmail = auth()->user()->email ?? '';
+        
+        // Initialize passenger array
+        for ($i = 0; $i < $this->numberOfPassengers; $i++) {
+            $this->passengers[] = [
+                'first_name' => '',
+                'last_name' => '',
+                'date_of_birth' => '',
+                'passport_number' => '',
+                'nationality' => '',
+            ];
+        }
+
+        // Load available travel classes for this flight
+        $this->travelClasses = $this->flight->flightSeatPrices()
+            ->with('travelClass')
+            ->get()
+            ->map(function($price) {
+                return [
+                    'id' => $price->travel_class_id,
+                    'name' => $price->travelClass->name,
+                    'price' => $price->price,
+                    'available_seats' => $price->available_seats,
+                ];
+            });
+
+        if ($this->travelClasses->isNotEmpty()) {
+            $this->selectedClassId = $this->travelClasses->first()['id'];
+            $this->calculateTotal();
+        }
+    }
+
+    public function updatedSelectedClassId()
+    {
+        $this->calculateTotal();
+    }
+
+    public function calculateTotal()
+    {
+        $selectedClass = $this->travelClasses->firstWhere('id', $this->selectedClassId);
+        if ($selectedClass) {
+            $this->totalPrice = $selectedClass['price'] * $this->numberOfPassengers;
+        }
+    }
+
+    public function createBooking()
+    {
+        $this->validate();
+
+        try {
+            DB::beginTransaction();
+
+            // Create booking
+            $booking = Booking::create([
+                'user_id' => auth()->id(),
+                'booking_code' => strtoupper(Str::random(6)),
+                'status' => BookingStatus::PENDING->value,
+                'total_price' => $this->totalPrice,
+                'contact_email' => $this->contactEmail,
+                'contact_phone' => $this->contactPhone,
+            ]);
+
+            // Attach flight to booking
+            $booking->flights()->attach($this->flight->id, [
+                'travel_class_id' => $this->selectedClassId,
+            ]);
+
+            // Create passengers
+            foreach ($this->passengers as $passengerData) {
+                BookingPassenger::create([
+                    'booking_id' => $booking->id,
+                    'first_name' => $passengerData['first_name'],
+                    'last_name' => $passengerData['last_name'],
+                    'date_of_birth' => $passengerData['date_of_birth'],
+                    'passport_number' => $passengerData['passport_number'],
+                    'nationality' => $passengerData['nationality'],
+                ]);
+            }
+
+            // Create payment record
+            Payment::create([
+                'booking_id' => $booking->id,
+                'amount' => $this->totalPrice,
+                'payment_method' => 'pending',
+                'status' => PaymentStatus::PENDING->value,
+                'transaction_id' => 'TRX-' . strtoupper(Str::random(10)),
+            ]);
+
+            DB::commit();
+
+            session()->flash('success', 'Booking created successfully!');
+            return redirect()->route('booking.payment', $booking->id);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            session()->flash('error', 'Failed to create booking. Please try again.');
+            \Log::error('Booking Creation Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    public function render()
+    {
+        return view('livewire.booking-form');
+    }
+}

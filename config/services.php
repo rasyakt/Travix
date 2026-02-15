@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    'aviationstack' => [
+        'api_key' => env('AVIATIONSTACK_API_KEY'),
+        'base_url' => env('AVIATIONSTACK_BASE_URL', 'http://api.aviationstack.com/v1'),
+    ],
+
 ];
