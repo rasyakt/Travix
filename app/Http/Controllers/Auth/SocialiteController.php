@@ -39,6 +39,22 @@ class SocialiteController extends Controller
 
             Auth::login($user, true);
 
+            // Link guest bookings to the logged-in user
+            $guestBookingIds = session()->get('guest_booking_ids', []);
+            if (!empty($guestBookingIds)) {
+                \App\Models\Booking::whereIn('id', $guestBookingIds)
+                    ->whereNull('user_id')
+                    ->update(['user_id' => $user->id]);
+
+                session()->forget('guest_booking_ids');
+
+                // If only one booking was made as guest, redirect back to its payment page
+                if (count($guestBookingIds) === 1) {
+                    return redirect()->route('booking.payment', $guestBookingIds[0])
+                        ->with('success', 'Logged in successfully. You can now proceed with your payment.');
+                }
+            }
+
             return redirect()->intended('/dashboard');
         } catch (\Exception $e) {
             return redirect('/')->with('error', 'Failed to authenticate with Google. Please try again.');

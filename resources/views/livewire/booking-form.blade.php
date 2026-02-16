@@ -70,13 +70,13 @@
                 @foreach($travelClasses as $class)
                     <label
                         class="relative flex cursor-pointer rounded-xl border-2 p-4 transition-all
-                                    {{ $selectedClassId == $class['id'] ? 'border-tv-primary bg-blue-50/50' : 'border-tv-border hover:border-[#d0d8e4]' }}">
+                                        {{ $selectedClassId == $class['id'] ? 'border-tv-primary bg-blue-50/50' : 'border-tv-border hover:border-[#d0d8e4]' }}">
                         <input type="radio" wire:model.live="selectedClassId" value="{{ $class['id'] }}" class="sr-only">
                         <div class="flex flex-1 flex-col">
                             <span class="font-bold text-tv-text text-sm">{{ $class['name'] }}</span>
                             <span class="text-xs text-tv-muted mt-0.5">{{ $class['available_seats'] }} available</span>
-                            <span
-                                class="text-lg font-extrabold text-tv-accent mt-2">${{ number_format($class['price'], 2) }}</span>
+                            <span class="text-lg font-extrabold text-tv-accent mt-2">Rp
+                                {{ number_format($class['price'], 0, ',', '.') }}</span>
                         </div>
                         @if($selectedClassId == $class['id'])
                             <div
@@ -181,7 +181,7 @@
                         {{ Str::plural('passenger', $numberOfPassengers) }}
                     </p>
                 </div>
-                <p class="text-3xl font-extrabold text-tv-accent">${{ number_format($totalPrice, 2) }}</p>
+                <p class="text-3xl font-extrabold text-tv-accent">Rp {{ number_format($totalPrice, 0, ',', '.') }}</p>
             </div>
         </div>
 

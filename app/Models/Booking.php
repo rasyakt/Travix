@@ -50,7 +50,7 @@ class Booking extends Model
 
         static::creating(function ($booking) {
             if (empty($booking->booking_code)) {
-                $booking->booking_code = (string) Str::uuid();
+                $booking->booking_code = strtoupper(Str::random(10));
             }
 
             if (empty($booking->booking_date)) {

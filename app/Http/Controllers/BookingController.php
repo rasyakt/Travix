@@ -93,6 +93,11 @@ class BookingController extends Controller
 
             DB::commit();
 
+            // Store booking ID in session for guest users to allow access to show/payment/seats
+            if (!Auth::check()) {
+                session()->put('guest_booking_ids', array_merge(session()->get('guest_booking_ids', []), [$booking->id]));
+            }
+
             return redirect()->route('booking.seats', $booking->id)
                 ->with('success', 'Booking created successfully. Please select your seats.');
 
@@ -104,7 +109,7 @@ class BookingController extends Controller
 
     public function show($id)
     {
-        $booking = Booking::with([
+        $query = Booking::with([
             'flights.schedule.originAirport',
             'flights.schedule.destinationAirport',
             'flights.schedule.airline',
@@ -112,24 +117,41 @@ class BookingController extends Controller
             'passengers.boardingPass.checkIn',
             'passengers.baggage',
             'payment'
-        ])
-            ->where('user_id', Auth::id())
-            ->findOrFail($id);
+        ]);
+
+        if (Auth::check()) {
+            $booking = $query->where('user_id', Auth::id())->findOrFail($id);
+        } else {
+            // Check if this booking ID is in the guest session
+            if (!in_array($id, session()->get('guest_booking_ids', []))) {
+                return redirect()->route('login')->with('info', 'Please login to view your booking.');
+            }
+            $booking = $query->findOrFail($id);
+        }
 
         return view('bookings.show', compact('booking'));
     }
 
     public function payment($id)
     {
-        $booking = Booking::with(['flights', 'payment'])
-            ->where('user_id', Auth::id())
-            ->findOrFail($id);
+        $query = Booking::with(['flights', 'payment']);
+
+        if (Auth::check()) {
+            $booking = $query->where('user_id', Auth::id())->findOrFail($id);
+        } else {
+            if (!in_array($id, session()->get('guest_booking_ids', []))) {
+                return redirect()->route('login')->with('info', 'Please login to proceed with payment.');
+            }
+            $booking = $query->findOrFail($id);
+        }
 
         return view('bookings.payment', compact('booking'));
     }
 
     public function processPayment(Request $request, $id)
     {
+        // processPayment is still protected by 'auth' middleware in routes/web.php
+        // but it's good to be explicit here
         $booking = Booking::with('payment')
             ->where('user_id', Auth::id())
             ->findOrFail($id);
@@ -160,7 +182,14 @@ class BookingController extends Controller
 
     public function selectSeats($id)
     {
-        $booking = Booking::where('user_id', Auth::id())->findOrFail($id);
+        if (Auth::check()) {
+            $booking = Booking::where('user_id', Auth::id())->findOrFail($id);
+        } else {
+            if (!in_array($id, session()->get('guest_booking_ids', []))) {
+                return redirect()->route('login')->with('info', 'Please login to select seats.');
+            }
+            $booking = Booking::findOrFail($id);
+        }
         return view('bookings.seats', compact('booking'));
     }
 
@@ -180,8 +209,8 @@ class BookingController extends Controller
 
         $booking = Booking::where('user_id', Auth::id())->findOrFail($id);
 
-        // Calculate baggage fee (example: $10 per kg)
-        $fee = $request->weight * 10;
+        // Calculate baggage fee (25.000 IDR per kg)
+        $fee = $request->weight * 25000;
 
         Baggage::create([
             'booking_passenger_id' => $request->passenger_id,

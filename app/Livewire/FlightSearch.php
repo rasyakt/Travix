@@ -26,10 +26,28 @@ class FlightSearch extends Component
     public $minimal = false;
     public $searchResults = [];
     public $searching = false;
+    public $isFullPage = false;
+
+    // Filters
+    public $filterAirlines = [];
+    public $maxPrice = 0;
+    public $selectedAirlines = [];
+
+    // Daily Prices
+    public $dailyPrices = [];
 
     public $originSuggestions = [];
     public $destinationSuggestions = [];
     public $airports = [];
+
+    protected $queryString = [
+        'origin' => ['except' => ''],
+        'destination' => ['except' => ''],
+        'departureDate' => ['except' => ''],
+        'tripType' => ['except' => 'one-way'],
+        'seatClass' => ['except' => 'Economy'],
+        'adults' => ['except' => 1],
+    ];
 
     protected $rules = [
         'origin' => 'required|string|size:3',
@@ -88,14 +106,12 @@ class FlightSearch extends Component
     {
         $this->origin = $iataCode;
         $this->originSearch = "$name ($iataCode)";
-        // Don't clear suggestions, just let Alpine hide the dropdown
     }
 
     public function selectDestination($iataCode, $name)
     {
         $this->destination = $iataCode;
         $this->destinationSearch = "$name ($iataCode)";
-        // Don't clear suggestions
     }
 
     public function refreshOriginSuggestions()
@@ -110,21 +126,49 @@ class FlightSearch extends Component
 
     public function mount()
     {
-        $this->departureDate = now()->format('Y-m-d');
+        if (empty($this->departureDate)) {
+            $this->departureDate = now()->format('Y-m-d');
+        }
         $this->returnDate = now()->addDays(2)->format('Y-m-d');
 
         // Initial popular suggestions
         $this->originSuggestions = Airport::limit(10)->get()->toArray();
         $this->destinationSuggestions = Airport::limit(10)->get()->toArray();
 
-        $this->airports = Airport::select('iata_code', 'name', 'city', 'country')
-            ->orderBy('name')
-            ->limit(100)
-            ->get();
+        // Check if we are on the full flights page
+        $this->isFullPage = request()->routeIs('flights.index');
+
+        // Resolve names if codes are present from query string
+        if (!empty($this->origin)) {
+            $apt = Airport::where('iata_code', $this->origin)->first();
+            if ($apt)
+                $this->originSearch = "{$apt->name} ({$apt->iata_code})";
+        }
+        if (!empty($this->destination)) {
+            $apt = Airport::where('iata_code', $this->destination)->first();
+            if ($apt)
+                $this->destinationSearch = "{$apt->name} ({$apt->iata_code})";
+        }
+
+        if ($this->isFullPage && !empty($this->origin) && !empty($this->destination)) {
+            $this->searchFlights();
+        }
     }
 
     public function searchFlights()
     {
+        // If not on full search page, redirect there with params
+        if (!$this->isFullPage) {
+            return redirect()->route('flights.index', [
+                'origin' => $this->origin ?: ($this->originSearch ? substr($this->originSearch, -4, 3) : ''),
+                'destination' => $this->destination ?: ($this->destinationSearch ? substr($this->destinationSearch, -4, 3) : ''),
+                'departureDate' => $this->departureDate,
+                'tripType' => $this->tripType,
+                'seatClass' => $this->seatClass,
+                'adults' => $this->adults,
+            ]);
+        }
+
         // Auto-detect codes if not selected but validly entered
         if (empty($this->origin) && preg_match('/\(([A-Z]{3})\)$/', $this->originSearch, $matches)) {
             $this->origin = $matches[1];
@@ -144,85 +188,123 @@ class FlightSearch extends Component
         $this->searchResults = [];
 
         try {
-            Log::info('Flight Search Started', [
-                'origin' => $this->origin,
-                'destination' => $this->destination,
-                'date' => $this->departureDate
-            ]);
+            // Fetch daily prices (Simulated range around departure date)
+            $this->generateDailyPrices();
 
-            // Search from database first
-            $dbFlights = Flight::with([
-                'schedule.airline',
-                'schedule.originAirport',
-                'schedule.destinationAirport',
-                'schedule.aircraft'
-            ])
-                ->whereHas('schedule.originAirport', function ($query) {
-                    $query->where('iata_code', strtoupper($this->origin));
-                })
-                ->whereHas('schedule.destinationAirport', function ($query) {
-                    $query->where('iata_code', strtoupper($this->destination));
-                })
-                ->whereDate('departure_datetime', $this->departureDate)
-                ->where('status', '!=', 'cancelled')
-                ->get();
+            // Search logic... (Keep existing logic but add filtering later)
+            $this->performSearch();
 
-            if ($dbFlights->isNotEmpty()) {
-                $this->searchResults = $dbFlights->map(function ($flight) {
-                    return [
-                        'id' => $flight->id,
-                        'flight_number' => $flight->flight_number,
-                        'airline' => $flight->schedule->airline->name ?? 'Unknown',
-                        'airline_logo' => $flight->schedule->airline->logo_url ?? null,
-                        'origin' => $flight->schedule->originAirport->iata_code ?? $this->origin,
-                        'origin_name' => $flight->schedule->originAirport->name ?? '',
-                        'destination' => $flight->schedule->destinationAirport->iata_code ?? $this->destination,
-                        'destination_name' => $flight->schedule->destinationAirport->name ?? '',
-                        'departure_time' => $flight->departure_datetime->format('H:i'),
-                        'arrival_time' => $flight->arrival_datetime->format('H:i'),
-                        'duration' => $flight->departure_datetime->diffInMinutes($flight->arrival_datetime),
-                        'price' => $flight->current_price,
-                        'available_seats' => $flight->available_seats,
-                        'aircraft' => $flight->schedule->aircraft->model ?? 'Unknown',
-                        'status' => $flight->status,
-                    ];
-                })->toArray();
-            } else {
-                // If no results in database, try SerpApi (Google Flights)
-                $serpApi = new SerpApiFlightService();
-                $apiResults = $serpApi->searchFlights(
-                    strtoupper($this->origin),
-                    strtoupper($this->destination),
-                    $this->departureDate,
-                    $this->tripType === 'round-trip' ? $this->returnDate : null,
-                    (int) $this->adults,
-                    (int) $this->children,
-                    (int) $this->infants, // Simplified: assuming on lap for infants
-                    0,
-                    $this->getSeatClassId()
-                );
-
-                if (!empty($apiResults)) {
-                    $totalPassengers = (int) $this->adults + (int) $this->children + (int) $this->infants;
-                    $this->searchResults = array_map(function ($flight) use ($totalPassengers) {
-                        $flight['price'] = $totalPassengers > 0 ? ($flight['price'] / $totalPassengers) : $flight['price'];
-                        return $flight;
-                    }, $apiResults);
-                }
-            }
-
-            if (empty($this->searchResults)) {
-                session()->flash('message', 'No flights found for the selected route and date.');
-            }
         } catch (\Exception $e) {
             Log::error('Flight Search Error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            session()->flash('error', 'An error occurred while searching flights. Please try again.');
+            session()->flash('error', 'An error occurred while searching flights.');
         } finally {
             $this->searching = false;
         }
+    }
+
+    protected function generateDailyPrices()
+    {
+        $baseDate = \Carbon\Carbon::parse($this->departureDate);
+        $this->dailyPrices = [];
+
+        for ($i = -3; $i <= 3; $i++) {
+            $date = $baseDate->copy()->addDays($i);
+            if ($date->isPast())
+                continue;
+
+            // Simple pseudo-random price based on date and route to keep it consistent for this session
+            $seed = crc32($this->origin . $this->destination . $date->toDateString());
+            $price = 1200000 + ($seed % 800000);
+
+            $this->dailyPrices[] = [
+                'date' => $date->format('Y-m-d'),
+                'label' => $date->format('D, d M'),
+                'price' => $price,
+                'is_current' => $date->isSameDay($baseDate),
+            ];
+        }
+    }
+
+    public function changeDate($date)
+    {
+        $this->departureDate = $date;
+        $this->searchFlights();
+    }
+
+    protected function performSearch()
+    {
+        $dbFlights = Flight::with([
+            'schedule.airline',
+            'schedule.originAirport',
+            'schedule.destinationAirport',
+            'schedule.aircraft'
+        ])
+            ->whereHas('schedule.originAirport', function ($query) {
+                $query->where('iata_code', strtoupper($this->origin));
+            })
+            ->whereHas('schedule.destinationAirport', function ($query) {
+                $query->where('iata_code', strtoupper($this->destination));
+            })
+            ->whereDate('departure_datetime', $this->departureDate)
+            ->where('status', '!=', 'cancelled')
+            ->get();
+
+        if ($dbFlights->isNotEmpty()) {
+            $this->searchResults = $dbFlights->map(function ($flight) {
+                return $this->formatFlight($flight);
+            })->toArray();
+        } else {
+            $serpApi = new SerpApiFlightService();
+            $apiResults = $serpApi->searchFlights(
+                strtoupper($this->origin),
+                strtoupper($this->destination),
+                $this->departureDate,
+                $this->tripType === 'round-trip' ? $this->returnDate : null,
+                (int) $this->adults,
+                (int) $this->children,
+                (int) $this->infants,
+                0,
+                $this->getSeatClassId()
+            );
+
+            if (!empty($apiResults)) {
+                $totalPassengers = (int) $this->adults + (int) $this->children + (int) $this->infants;
+                $this->searchResults = array_map(function ($flight) use ($totalPassengers) {
+                    $flight['price'] = $totalPassengers > 0 ? ($flight['price'] / $totalPassengers) : $flight['price'];
+                    return $flight;
+                }, $apiResults);
+            }
+        }
+
+        // Extract filters info
+        $this->filterAirlines = collect($this->searchResults)->pluck('airline')->unique()->values()->all();
+        $prices = collect($this->searchResults)->pluck('price');
+        $this->maxPrice = $prices->max() ?: 5000000;
+    }
+
+    protected function formatFlight($flight)
+    {
+        return [
+            'id' => $flight->id,
+            'flight_number' => $flight->flight_number,
+            'airline' => $flight->schedule->airline->name ?? 'Unknown',
+            'airline_logo' => $flight->schedule->airline->logo_url ?? null,
+            'origin' => $flight->schedule->originAirport->iata_code ?? $this->origin,
+            'origin_name' => $flight->schedule->originAirport->name ?? '',
+            'destination' => $flight->schedule->destinationAirport->iata_code ?? $this->destination,
+            'destination_name' => $flight->schedule->destinationAirport->name ?? '',
+            'departure_time' => $flight->departure_datetime->format('H:i'),
+            'arrival_time' => $flight->arrival_datetime->format('H:i'),
+            'duration' => $flight->departure_datetime->diffInMinutes($flight->arrival_datetime),
+            'price' => $flight->current_price,
+            'available_seats' => $flight->available_seats,
+            'aircraft' => $flight->schedule->aircraft->model ?? 'Unknown',
+            'status' => $flight->status,
+            'amenities' => $flight->schedule->aircraft->amenities ?? [],
+        ];
     }
 
     public function selectFlight($flightId)
@@ -246,6 +328,15 @@ class FlightSearch extends Component
 
     public function render()
     {
-        return view('livewire.flight-search');
+        // Apply filters in memory for now
+        $filteredResults = collect($this->searchResults);
+
+        if (!empty($this->selectedAirlines)) {
+            $filteredResults = $filteredResults->whereIn('airline', $this->selectedAirlines);
+        }
+
+        return view('livewire.flight-search', [
+            'flights' => $filteredResults->all()
+        ]);
     }
 }

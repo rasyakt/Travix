@@ -18,7 +18,7 @@
                 </div>
             </div>
             <span
-                class="tv-badge {{ $flight->status === 'active' || $flight->status === 'scheduled' ? 'bg-emerald-50 text-emerald-600' : ($flight->status === 'delayed' ? 'bg-amber-50 text-amber-600' : ($flight->status === 'cancelled' ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-[#687b8e]')) }}">
+                class="tv-badge {{ $flight->status === 'active' || $flight->status === 'scheduled' ? 'bg-emerald-50 text-emerald-600' : ($flight->status === 'delayed' ? 'bg-amber-50 text-amber-600' : ($flight->status === 'cancelled' ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-tv-muted')) }}">
                 ● {{ ucfirst($flight->status) }}
             </span>
         </div>
@@ -207,7 +207,7 @@
                                         </div>
                                         <div class="text-right">
                                             <p class="text-xl font-extrabold text-tv-accent">
-                                                ${{ number_format($seatPrice->price, 2) }}</p>
+                                                Rp {{ number_format($seatPrice->price, 0, ',', '.') }}</p>
                                             <p class="text-[10px] text-[#a0aec0]">/person</p>
                                         </div>
                                     </div>
@@ -227,7 +227,7 @@
                     <div class="p-5 space-y-4">
                         <div class="flex justify-between items-center">
                             <span class="text-xs font-medium text-tv-muted">Base Fare</span>
-                            <span class="font-bold text-tv-text">${{ number_format($flight->current_price, 2) }}</span>
+                            <span class="font-bold text-tv-text">Rp {{ number_format($flight->current_price, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-xs font-medium text-tv-muted">Airport Tax</span>
@@ -236,7 +236,7 @@
                         <div class="border-t border-dashed border-tv-border pt-4 flex justify-between items-center">
                             <span class="text-sm font-bold text-tv-text">Total</span>
                             <span
-                                class="text-2xl font-extrabold text-tv-accent">${{ number_format($flight->current_price, 2) }}</span>
+                                class="text-2xl font-extrabold text-tv-accent">Rp {{ number_format($flight->current_price, 0, ',', '.') }}</span>
                         </div>
 
                         @auth
