@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\SocialiteController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FlightController;
 use App\Http\Controllers\BookingController;
@@ -12,8 +14,11 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-// Google OAuth
-Route::get('/auth/google', [SocialiteController::class, 'redirectToGoogle'])->name('login');
+// Auth Routes
+Route::get('/login', [LoginController::class, 'show'])->name('login');
+Route::get('/register', [RegisterController::class, 'show'])->name('register');
+Route::post('/register', [RegisterController::class, 'store']);
+Route::get('/auth/google', [SocialiteController::class, 'redirectToGoogle'])->name('login.google');
 Route::get('/auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
 Route::post('/logout', [SocialiteController::class, 'logout'])->name('logout');
 

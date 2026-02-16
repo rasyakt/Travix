@@ -17,12 +17,12 @@
         <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
             <div class="flex items-center gap-2">
                 <button type="button" @click="tripType = 'one-way'"
-                    :class="tripType === 'one-way' ? 'bg-tv-primary text-white shadow-lg' : 'bg-black/20 text-white/80 hover:bg-black/30'"
+                    :class="tripType === 'one-way' ? 'bg-tv-primary text-white shadow-lg' : 'bg-gray-100 text-tv-secondary hover:bg-gray-200'"
                     class="px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200">
                     Sekali Jalan / Pulang Pergi
                 </button>
                 <button type="button" @click="tripType = 'multi-city'"
-                    :class="tripType === 'multi-city' ? 'bg-tv-primary text-white shadow-lg' : 'bg-black/20 text-white/80 hover:bg-black/30'"
+                    :class="tripType === 'multi-city' ? 'bg-tv-primary text-white shadow-lg' : 'bg-gray-100 text-tv-secondary hover:bg-gray-200'"
                     class="px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200">
                     Multi-kota
                 </button>
@@ -32,13 +32,13 @@
                 {{-- Passenger Dropdown --}}
                 <div class="relative">
                     <button type="button" @click="passengersOpen = !passengersOpen"
-                        class="flex items-center gap-2.5 px-4 py-2.5 bg-black/10 border border-white/20 rounded-lg text-white hover:bg-black/20 transition-all">
-                        <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="flex items-center gap-2.5 px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-tv-secondary hover:bg-gray-200 transition-all font-bold">
+                        <svg class="w-5 h-5 text-tv-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
-                        <span class="text-sm font-bold" x-text="(adults + children + infants) + ' Penumpang'"></span>
-                        <svg class="w-4 h-4 transition-transform" :class="passengersOpen ? 'rotate-180' : ''"
+                        <span class="text-sm" x-text="(adults + children + infants) + ' Penumpang'"></span>
+                        <svg class="w-4 h-4 transition-transform text-tv-muted" :class="passengersOpen ? 'rotate-180' : ''"
                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
@@ -97,12 +97,12 @@
                 {{-- Class Dropdown --}}
                 <div class="relative">
                     <button type="button" @click="classOpen = !classOpen"
-                        class="flex items-center gap-2.5 px-4 py-2.5 bg-black/10 border border-white/20 rounded-lg text-white hover:bg-black/20 transition-all">
-                        <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="flex items-center gap-2.5 px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-tv-secondary hover:bg-gray-200 transition-all font-bold">
+                        <svg class="w-5 h-5 text-tv-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
-                        <span class="text-sm font-bold" x-text="seatClass"></span>
-                        <svg class="w-4 h-4 transition-transform" :class="classOpen ? 'rotate-180' : ''" fill="none"
+                        <span class="text-sm" x-text="seatClass"></span>
+                        <svg class="w-4 h-4 transition-transform text-tv-muted" :class="classOpen ? 'rotate-180' : ''" fill="none"
                             stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
@@ -126,7 +126,7 @@
 
         {{-- Labels Row --}}
         <div
-            class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 mb-2 px-1 text-white text-[11px] font-bold uppercase tracking-wider">
+            class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 mb-2 px-1 text-tv-secondary text-[11px] font-black uppercase tracking-widest">
             <div class="grid grid-cols-2 gap-4">
                 <div>Dari</div>
                 <div>Ke</div>
@@ -135,7 +135,7 @@
                 <div>Tanggal pergi</div>
                 <div class="flex items-center gap-2">
                     <input type="checkbox" x-model="showReturn"
-                        class="w-4 h-4 rounded text-tv-primary focus:ring-tv-primary/20 bg-white/20 border-white/40 cursor-pointer">
+                        class="w-4 h-4 rounded text-tv-primary focus:ring-tv-primary/20 bg-gray-100 border-gray-300 cursor-pointer">
                     <span>Tanggal Pulang</span>
                 </div>
             </div>
@@ -155,7 +155,7 @@
                     </div>
                     <input type="text" wire:model.live.debounce.300ms="originSearch"
                         @focus="originOpen = true; $wire.refreshOriginSuggestions()" @click.away="originOpen = false"
-                        class="w-full pl-12 pr-4 py-5 border-none focus:ring-0 text-tv-text font-bold placeholder-tv-muted/50"
+                        class="w-full pl-12 pr-4 py-5 border-none focus:ring-0 text-tv-text font-bold placeholder-tv-muted"
                         placeholder="Asal (Misal: Jakarta)">
 
                     {{-- Origin Suggestions --}}
@@ -229,7 +229,7 @@
                     <input type="text" wire:model.live.debounce.300ms="destinationSearch"
                         @focus="destinationOpen = true; $wire.refreshDestinationSuggestions()"
                         @click.away="destinationOpen = false"
-                        class="w-full pl-14 pr-4 py-5 border-none focus:ring-0 text-tv-text font-bold placeholder-tv-muted/50"
+                        class="w-full pl-14 pr-4 py-5 border-none focus:ring-0 text-tv-text font-bold placeholder-tv-muted"
                         placeholder="Tujuan (Misal: Singapore)">
 
                     {{-- Destination Suggestions --}}
@@ -432,7 +432,7 @@
                 </div>
 
                 @foreach($flights as $result)
-                    <div x-data="{ open: false }" class="tv-card-hover overflow-hidden transition-all bg-white/95 backdrop-blur-md">
+                    <div x-data="{ open: false }" class="tv-card-hover overflow-visible transition-all bg-white/95 backdrop-blur-md">
                         <div class="p-5 md:p-6">
                             <div class="flex flex-col md:flex-row md:items-center gap-5">
                                 <div class="flex items-center gap-3 md:w-44 shrink-0">
