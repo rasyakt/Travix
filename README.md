@@ -305,4 +305,4 @@ Open-source under MIT License.
 
 ## 👨‍💻 Author
 
-Built with ❤️ using Laravel 12, Livewire, and Tailwind CSS.
+Built with using Laravel 12, Livewire, and Tailwind CSS.
