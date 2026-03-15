@@ -9,8 +9,8 @@
         children: @entangle('children'),
         infants: @entangle('infants'),
         seatClass: @entangle('seatClass'),
-        originOpen: false,
-        destinationOpen: false
+        originOpen: @entangle('originOpen'),
+        destinationOpen: @entangle('destinationOpen')
     }" class="relative z-20">
 
         {{-- Top Row: Toggles & Dropdowns --}}
@@ -146,7 +146,8 @@
             <div
                 class="flex-1 bg-white rounded-2xl shadow-xl flex items-center divide-x divide-tv-border ring-1 ring-black/5">
                 {{-- Origin --}}
-                <div class="flex-1 relative group bg-white hover:bg-gray-50/50 transition-colors rounded-l-2xl">
+                <div class="flex-1 relative group bg-white hover:bg-gray-50/50 transition-colors rounded-l-2xl" 
+                    @click.away="originOpen = false" wire:key="origin-input-wrapper">
                     <div class="absolute left-4 top-1/2 -translate-y-1/2">
                         <svg class="w-5 h-5 text-tv-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -154,14 +155,14 @@
                         </svg>
                     </div>
                     <input type="text" wire:model.live.debounce.300ms="originSearch"
-                        @focus="originOpen = true; $wire.refreshOriginSuggestions()" @click.away="originOpen = false"
+                        @focus="originOpen = true; $wire.refreshOriginSuggestions(); $nextTick(() => $el.select())"
                         class="w-full pl-12 pr-4 py-5 border-none focus:ring-0 text-tv-text font-bold placeholder-tv-muted"
-                        placeholder="Asal (Misal: Jakarta)">
+                        placeholder="Asal (...)">
 
                     {{-- Origin Suggestions --}}
-                    @if(!empty($originSuggestions))
-                        <div x-show="originOpen" x-cloak
-                            class="absolute left-0 right-0 top-full mt-3 bg-white rounded-2xl shadow-[0_20px_60px_rgba(7,112,227,0.18)] z-50 border border-tv-border max-h-[500px] overflow-y-auto w-full md:min-w-[500px] scrollbar-thin scrollbar-thumb-tv-primary/20 scrollbar-track-transparent pb-4">
+                    <div x-show="originOpen && $wire.originSuggestions.length > 0" x-cloak
+                        wire:ignore.self
+                        class="absolute left-0 right-0 top-full mt-3 bg-white rounded-2xl shadow-[0_20px_60px_rgba(7,112,227,0.18)] z-50 border border-tv-border max-h-[500px] overflow-y-auto w-full md:min-w-[500px] scrollbar-thin scrollbar-thumb-tv-primary/20 scrollbar-track-transparent pb-4">
                             <div
                                 class="px-6 py-4 bg-gray-50/50 border-b border-tv-border flex items-center justify-between">
                                 <span class="text-xs font-black text-tv-muted uppercase tracking-widest">Kota atau Bandara
@@ -202,7 +203,6 @@
                                 </button>
                             @endforeach
                         </div>
-                    @endif
                 </div>
 
                 {{-- Swap Button --}}
@@ -218,7 +218,8 @@
                 </div>
 
                 {{-- Destination --}}
-                <div class="flex-1 relative group bg-white hover:bg-gray-50/50 transition-colors rounded-r-2xl">
+                <div class="flex-1 relative group bg-white hover:bg-gray-50/50 transition-colors rounded-r-2xl"
+                    @click.away="destinationOpen = false" wire:key="destination-input-wrapper">
                     <div class="absolute left-6 top-1/2 -translate-y-1/2">
                         <svg class="w-5 h-5 text-tv-primary rotate-45" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
@@ -227,15 +228,14 @@
                         </svg>
                     </div>
                     <input type="text" wire:model.live.debounce.300ms="destinationSearch"
-                        @focus="destinationOpen = true; $wire.refreshDestinationSuggestions()"
-                        @click.away="destinationOpen = false"
+                        @focus="destinationOpen = true; $wire.refreshDestinationSuggestions(); $nextTick(() => $el.select())"
                         class="w-full pl-14 pr-4 py-5 border-none focus:ring-0 text-tv-text font-bold placeholder-tv-muted"
-                        placeholder="Tujuan (Misal: Singapore)">
+                        placeholder="Tujuan (...)">
 
                     {{-- Destination Suggestions --}}
-                    @if(!empty($destinationSuggestions))
-                        <div x-show="destinationOpen" x-cloak
-                            class="absolute left-0 right-0 top-full mt-3 bg-white rounded-2xl shadow-[0_20px_60px_rgba(7,112,227,0.18)] z-50 border border-tv-border max-h-[500px] overflow-y-auto w-full md:min-w-[500px] scrollbar-thin scrollbar-thumb-tv-primary/20 scrollbar-track-transparent pb-4">
+                    <div x-show="destinationOpen && $wire.destinationSuggestions.length > 0" x-cloak
+                        wire:ignore.self
+                        class="absolute left-0 right-0 top-full mt-3 bg-white rounded-2xl shadow-[0_20px_60px_rgba(7,112,227,0.18)] z-50 border border-tv-border max-h-[500px] overflow-y-auto w-full md:min-w-[500px] scrollbar-thin scrollbar-thumb-tv-primary/20 scrollbar-track-transparent pb-4">
                             <div
                                 class="px-6 py-4 bg-gray-50/50 border-b border-tv-border flex items-center justify-between">
                                 <span class="text-xs font-black text-tv-muted uppercase tracking-widest">Kota atau Bandara
@@ -276,7 +276,6 @@
                                 </button>
                             @endforeach
                         </div>
-                    @endif
                 </div>
             </div>
 
@@ -370,228 +369,231 @@
         </div>
     @endif
 
-    {{-- Main Content Area (Filters + Results) --}}
-    <div class="flex flex-col lg:flex-row gap-8 items-start">
-        {{-- Filter Sidebar --}}
-        @if(!empty($searchResults))
-            <div class="w-full lg:w-72 shrink-0 space-y-6">
-                <div class="bg-white rounded-2xl p-6 shadow-xl border border-tv-border">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="font-black text-tv-text uppercase tracking-tight text-sm">Filter</h3>
-                        <button type="button" wire:click="$set('selectedAirlines', [])" class="text-tv-primary text-[10px] font-black uppercase hover:underline">Reset</button>
-                    </div>
-
-                    {{-- Airline Filter --}}
-                    <div>
-                        <p class="text-[11px] font-black text-tv-muted uppercase tracking-widest mb-4">Maskapai</p>
-                        <div class="space-y-3">
-                            @foreach($filterAirlines as $airline)
-                                <label class="flex items-center gap-3 cursor-pointer group">
-                                    <input type="checkbox" wire:model.live="selectedAirlines" value="{{ $airline }}"
-                                        class="w-5 h-5 rounded border-tv-border text-tv-primary focus:ring-tv-primary/20 cursor-pointer">
-                                    <span class="text-sm font-bold text-tv-text group-hover:text-tv-primary transition-colors">{{ $airline }}</span>
-                                </label>
-                            @endforeach
+    {{-- Main Content Area (Filters + Res    {{-- Main Content Area (Filters + Results) --}}
+    @if($isFullPage)
+        <div class="flex flex-col lg:flex-row gap-8 items-start">
+            {{-- Filter Sidebar --}}
+            @if(!empty($searchResults))
+                <div class="w-full lg:w-72 shrink-0 space-y-6">
+                    <div class="bg-white rounded-2xl p-6 shadow-xl border border-tv-border">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="font-black text-tv-text uppercase tracking-tight text-sm">Filter</h3>
+                            <button type="button" wire:click="$set('selectedAirlines', [])" class="text-tv-primary text-[10px] font-black uppercase hover:underline">Reset</button>
                         </div>
-                    </div>
 
-                    {{-- Price Filter --}}
-                    @if(isset($maxPrice))
-                        <div class="mt-8 pt-8 border-t border-tv-border">
-                            <p class="text-[11px] font-black text-tv-muted uppercase tracking-widest mb-4">Harga Tertinggi</p>
-                            <div class="px-2">
-                                <input type="range" min="0" max="{{ $maxPrice }}" step="100000"
-                                    class="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-tv-primary">
-                                <div class="flex justify-between mt-3">
-                                    <span class="text-[10px] font-bold text-tv-muted">Rp 0</span>
-                                    <span class="text-[10px] font-bold text-tv-primary">Rp {{ number_format($maxPrice, 0, ',', '.') }}</span>
-                                </div>
+                        {{-- Airline Filter --}}
+                        <div>
+                            <p class="text-[11px] font-black text-tv-muted uppercase tracking-widest mb-4">Maskapai</p>
+                            <div class="space-y-3">
+                                @foreach($filterAirlines as $airline)
+                                    <label class="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" wire:model.live="selectedAirlines" value="{{ $airline }}"
+                                            class="w-5 h-5 rounded border-tv-border text-tv-primary focus:ring-tv-primary/20 cursor-pointer">
+                                        <span class="text-sm font-bold text-tv-text group-hover:text-tv-primary transition-colors">{{ $airline }}</span>
+                                    </label>
+                                @endforeach
                             </div>
                         </div>
-                    @endif
-                </div>
-                
-                {{-- Promo Banner --}}
-                <div class="bg-gradient-to-br from-tv-primary to-[#0052ad] rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
-                    <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                        <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
-                    </div>
-                    <p class="text-[11px] font-black uppercase tracking-widest mb-1">Promo Khusus</p>
-                    <h4 class="text-lg font-black leading-tight mb-3">Diskon Rp 100rb untuk pengguna baru!</h4>
-                    <button class="bg-white text-tv-primary px-4 py-2 rounded-lg text-[10px] font-black uppercase shadow-lg">Pakai Sekarang</button>
-                </div>
-            </div>
-        @endif
 
-        {{-- Results Column --}}
-        <div class="flex-1 space-y-4 w-full">
-            @if(!empty($flights))
-                <div class="flex items-center justify-between px-2 mb-2">
-                    <h2 class="text-xl font-extrabold text-white">Hasil Pencarian</h2>
-                    <span class="tv-badge-blue bg-white/10 text-white border-white/20">{{ count($flights) }} Penerbangan</span>
-                </div>
-
-                @foreach($flights as $result)
-                    <div x-data="{ open: false }" class="tv-card-hover overflow-visible transition-all bg-white/95 backdrop-blur-md">
-                        <div class="p-5 md:p-6">
-                            <div class="flex flex-col md:flex-row md:items-center gap-5">
-                                <div class="flex items-center gap-3 md:w-44 shrink-0">
-                                    @if(isset($result['airline_logo']))
-                                        <img src="{{ $result['airline_logo'] }}" alt="{{ $result['airline'] }}"
-                                            class="h-10 w-10 rounded-lg object-contain bg-gray-50 p-1">
-                                    @else
-                                        <div class="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                                            <svg class="w-5 h-5 text-tv-primary" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                                            </svg>
-                                        </div>
-                                    @endif
-                                    <div>
-                                        <p class="font-bold text-tv-text text-sm">{{ $result['airline'] }}</p>
-                                        <p class="text-[10px] text-tv-muted uppercase font-mono">{{ $result['flight_number'] ?? '' }}</p>
-                                    </div>
-                                </div>
-
-                                <div class="flex-1 grid grid-cols-3 gap-3 items-center">
-                                    <div>
-                                        <p class="text-2xl font-black text-tv-text">{{ $result['departure_time'] }}</p>
-                                        <p class="text-xs text-tv-muted font-bold">{{ $result['origin'] }}</p>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="flex items-center gap-2 justify-center">
-                                            <div class="w-1.5 h-1.5 rounded-full bg-tv-primary/30"></div>
-                                            <div class="h-px bg-tv-border flex-1 max-w-[40px]"></div>
-                                            <svg class="w-4 h-4 text-tv-primary" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                                            </svg>
-                                            <div class="h-px bg-tv-border flex-1 max-w-[40px]"></div>
-                                            <div class="w-1.5 h-1.5 rounded-full bg-tv-accent/30"></div>
-                                        </div>
-                                        @if(isset($result['duration']))
-                                            <p class="text-[10px] font-bold text-tv-muted mt-1">{{ floor($result['duration'] / 60) }}j {{ $result['duration'] % 60 }}m · Langsung</p>
-                                        @endif
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="text-2xl font-black text-tv-text">{{ $result['arrival_time'] }}</p>
-                                        <p class="text-xs text-tv-muted font-bold">{{ $result['destination'] }}</p>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-center gap-4 md:flex-col md:items-end md:w-44 shrink-0 border-t md:border-t-0 md:border-l border-tv-border pt-4 md:pt-0 md:pl-6">
-                                    @if(isset($result['price']))
-                                        <div class="md:text-right">
-                                            <p class="text-xl font-black text-tv-accent">Rp {{ number_format($result['price'], 0, ',', '.') }}</p>
-                                            <p class="text-[10px] text-tv-muted font-bold">/orang</p>
-                                        </div>
-                                    @endif
-                                    <button wire:click="selectFlight({{ $result['id'] ?? 0 }})"
-                                        class="btn-tv-primary text-[11px] py-2.5 px-6 font-black ml-auto md:ml-0 shadow-lg">PILIH</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {{-- Footer Actions --}}
-                        <div class="bg-gray-50/80 px-5 py-3 border-t border-tv-border flex items-center justify-between">
-                            <div class="flex items-center gap-4">
-                                <button @click="open = !open" class="text-tv-primary text-[10px] font-black uppercase flex items-center gap-1.5 hover:opacity-80 transition-opacity">
-                                    <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                    Detail Penerbangan
-                                </button>
-                                @if(!empty($result['amenities']))
-                                    <div class="flex items-center gap-3 border-l border-tv-border pl-4">
-                                        @foreach(array_slice($result['amenities'], 0, 3) as $amenity)
-                                            @php
-                                                $isWifi = str_contains(strtolower($amenity), 'wifi');
-                                                $isPower = str_contains(strtolower($amenity), 'power') || str_contains(strtolower($amenity), 'usb');
-                                                $isFood = str_contains(strtolower($amenity), 'food') || str_contains(strtolower($amenity), 'meal');
-                                            @endphp
-                                            @if($isWifi) <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="WiFi"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-4.08-7.071a9 9 0 0112.14 0M4.929 7.929a13 13 0 0118.142 0"/></svg>
-                                            @elseif($isPower) <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Power"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                            @elseif($isFood) <svg class="w-3.5 h-3.5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Makanan"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                                            @endif
-                                        @endforeach
-                                    </div>
-                                @endif
-                            </div>
-                            <span class="text-[10px] font-black text-tv-primary bg-blue-50 px-2 py-0.5 rounded">{{ $result['aircraft'] }}</span>
-                        </div>
-
-                        {{-- Details Panel --}}
-                        <div x-show="open" x-collapse x-cloak class="border-t border-tv-border bg-gray-50/50 p-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div>
-                                    <h4 class="text-xs font-black text-tv-text uppercase mb-4 flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-tv-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        Rincian Penerbangan
-                                    </h4>
-                                    <div class="space-y-4">
-                                        <div class="flex items-start gap-4">
-                                            <div class="flex flex-col items-center gap-1 mt-1">
-                                                <div class="w-2 h-2 rounded-full border-2 border-tv-primary bg-white"></div>
-                                                <div class="w-0.5 h-12 bg-tv-border border-dashed"></div>
-                                                <div class="w-2 h-2 rounded-full bg-tv-accent"></div>
-                                            </div>
-                                            <div class="space-y-8">
-                                                <div>
-                                                    <p class="text-sm font-black text-tv-text">{{ $result['departure_time'] }} · {{ $result['origin_name'] }} ({{ $result['origin'] }})</p>
-                                                    <p class="text-[11px] text-tv-muted mt-0.5">{{ \Carbon\Carbon::parse($departureDate)->format('d M Y') }}</p>
-                                                </div>
-                                                <div>
-                                                    <p class="text-sm font-black text-tv-text">{{ $result['arrival_time'] }} · {{ $result['destination_name'] }} ({{ $result['destination'] }})</p>
-                                                    <p class="text-[11px] text-tv-muted mt-0.5">{{ \Carbon\Carbon::parse($departureDate)->format('d M Y') }}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h4 class="text-xs font-black text-tv-text uppercase mb-4 flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-tv-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
-                                        Fasilitas & Bagasi
-                                    </h4>
-                                    <div class="bg-white rounded-xl p-4 border border-tv-border shadow-sm space-y-3">
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-tv-muted font-bold">Bagasi Kabin</span>
-                                            <span class="text-tv-text font-black">7 kg</span>
-                                        </div>
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-tv-muted font-bold">Bagasi Terdaftar</span>
-                                            <span class="text-tv-text font-black">20 kg</span>
-                                        </div>
-                                        <div class="pt-3 border-t border-tv-border">
-                                            <p class="text-[10px] font-black text-tv-muted uppercase mb-2">Amenities</p>
-                                            <div class="flex flex-wrap gap-2">
-                                                @foreach($result['amenities'] as $amenity)
-                                                    <span class="px-2.5 py-1 bg-gray-50 rounded-lg text-[10px] font-bold text-tv-text border border-tv-border">{{ $amenity }}</span>
-                                                @endforeach
-                                            </div>
-                                        </div>
+                        {{-- Price Filter --}}
+                        @if(isset($maxPrice))
+                            <div class="mt-8 pt-8 border-t border-tv-border">
+                                <p class="text-[11px] font-black text-tv-muted uppercase tracking-widest mb-4">Harga Tertinggi</p>
+                                <div class="px-2">
+                                    <input type="range" min="0" max="{{ $maxPrice }}" step="100000"
+                                        class="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-tv-primary">
+                                    <div class="flex justify-between mt-3">
+                                        <span class="text-[10px] font-bold text-tv-muted">Rp 0</span>
+                                        <span class="text-[10px] font-bold text-tv-primary">Rp {{ number_format($maxPrice, 0, ',', '.') }}</span>
                                     </div>
                                 </div>
                             </div>
+                        @endif
+                    </div>
+                    
+                    {{-- Promo Banner --}}
+                    <div class="bg-linear-to-br from-tv-primary to-[#0052ad] rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
+                        <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                            <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
                         </div>
+                        <p class="text-[11px] font-black uppercase tracking-widest mb-1">Promo Khusus</p>
+                        <h4 class="text-lg font-black leading-tight mb-3">Diskon Rp 100rb untuk pengguna baru!</h4>
+                        <button class="bg-white text-tv-primary px-4 py-2 rounded-lg text-[10px] font-black uppercase shadow-lg">Pakai Sekarang</button>
                     </div>
-                @endforeach
-            @elseif($searching)
-                <div class="flex flex-col items-center justify-center py-20 text-white">
-                    <svg class="animate-spin h-10 w-10 mb-4" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
-                    <p class="font-black uppercase tracking-widest text-sm">Mencari Penerbangan Terbaik...</p>
-                </div>
-            @elseif(!empty($originSearch) && !empty($destinationSearch))
-                <div class="tv-card p-12 text-center bg-white rounded-2xl shadow-xl">
-                    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-black text-tv-text mb-2">Maaf, Tidak Ada Penerbangan</h3>
-                    <p class="text-tv-muted text-sm max-w-sm mx-auto">Coba ganti tanggal atau rute pencarian Anda untuk melihat jadwal lainnya.</p>
-                    <button wire:click="$set('departureDate', '{{ now()->addDay()->format('Y-m-d') }}')" class="mt-8 btn-tv-primary px-8">Lihat Besok</button>
                 </div>
             @endif
+
+            {{-- Results Column --}}
+            <div class="flex-1 space-y-4 w-full">
+                @if(!empty($flights))
+                    <div class="flex items-center justify-between px-2 mb-2">
+                        <h2 class="text-xl font-extrabold text-white">Hasil Pencarian</h2>
+                        <span class="tv-badge-blue bg-white/10 text-white border-white/20">{{ count($flights) }} Penerbangan</span>
+                    </div>
+
+                    @foreach($flights as $result)
+                        <div x-data="{ open: false }" class="tv-card-hover overflow-visible transition-all bg-white/95 backdrop-blur-md">
+                            <div class="p-5 md:p-6">
+                                <div class="flex flex-col md:flex-row md:items-center gap-5">
+                                    <div class="flex items-center gap-3 md:w-44 shrink-0">
+                                        @if(isset($result['airline_logo']))
+                                            <img src="{{ $result['airline_logo'] }}" alt="{{ $result['airline'] }}"
+                                                class="h-10 w-10 rounded-lg object-contain bg-gray-50 p-1">
+                                        @else
+                                            <div class="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                                                <svg class="w-5 h-5 text-tv-primary" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                                                </svg>
+                                            </div>
+                                        @endif
+                                        <div>
+                                            <p class="font-bold text-tv-text text-sm">{{ $result['airline'] }}</p>
+                                            <p class="text-[10px] text-tv-muted uppercase font-mono">{{ $result['flight_number'] ?? '' }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex-1 grid grid-cols-3 gap-3 items-center">
+                                        <div>
+                                            <p class="text-2xl font-black text-tv-text">{{ $result['departure_time'] }}</p>
+                                            <p class="text-xs text-tv-muted font-bold">{{ $result['origin'] }}</p>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="flex items-center gap-2 justify-center">
+                                                <div class="w-1.5 h-1.5 rounded-full bg-tv-primary/30"></div>
+                                                <div class="h-px bg-tv-border flex-1 max-w-[40px]"></div>
+                                                <svg class="w-4 h-4 text-tv-primary" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                                                </svg>
+                                                <div class="h-px bg-tv-border flex-1 max-w-[40px]"></div>
+                                                <div class="w-1.5 h-1.5 rounded-full bg-tv-accent/30"></div>
+                                            </div>
+                                            @if(isset($result['duration']))
+                                                <p class="text-[10px] font-bold text-tv-muted mt-1">{{ floor($result['duration'] / 60) }}j {{ $result['duration'] % 60 }}m · Langsung</p>
+                                            @endif
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-2xl font-black text-tv-text">{{ $result['arrival_time'] }}</p>
+                                            <p class="text-xs text-tv-muted font-bold">{{ $result['destination'] }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-4 md:flex-col md:items-end md:w-44 shrink-0 border-t md:border-t-0 md:border-l border-tv-border pt-4 md:pt-0 md:pl-6">
+                                        @if(isset($result['price']))
+                                            <div class="md:text-right">
+                                                <p class="text-xl font-black text-tv-accent">Rp {{ number_format($result['price'], 0, ',', '.') }}</p>
+                                                <p class="text-[10px] text-tv-muted font-bold">/orang</p>
+                                            </div>
+                                        @endif
+                                        <button wire:click="selectFlight({{ $result['id'] ?? 0 }})"
+                                            class="btn-tv-primary text-[11px] py-2.5 px-6 font-black ml-auto md:ml-0 shadow-lg">PILIH</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {{-- Footer Actions --}}
+                            <div class="bg-gray-50/80 px-5 py-3 border-t border-tv-border flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <button @click="open = !open" class="text-tv-primary text-[10px] font-black uppercase flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+                                        <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                        Detail Penerbangan
+                                    </button>
+                                    @if(!empty($result['amenities']))
+                                        <div class="flex items-center gap-3 border-l border-tv-border pl-4">
+                                            @foreach(array_slice($result['amenities'], 0, 3) as $amenity)
+                                                @php
+                                                    $isWifi = str_contains(strtolower($amenity), 'wifi');
+                                                    $isPower = str_contains(strtolower($amenity), 'power') || str_contains(strtolower($amenity), 'usb');
+                                                    $isFood = str_contains(strtolower($amenity), 'food') || str_contains(strtolower($amenity), 'meal');
+                                                @endphp
+                                                @if($isWifi) <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="WiFi"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-4.08-7.071a9 9 0 0112.14 0M4.929 7.929a13 13 0 0118.142 0"/></svg>
+                                                @elseif($isPower) <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Power"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                                @elseif($isFood) <svg class="w-3.5 h-3.5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Makanan"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
+                                <span class="text-[10px] font-black text-tv-primary bg-blue-50 px-2 py-0.5 rounded">{{ $result['aircraft'] }}</span>
+                            </div>
+
+                            {{-- Details Panel --}}
+                            <div x-show="open" x-collapse x-cloak class="border-t border-tv-border bg-gray-50/50 p-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div>
+                                        <h4 class="text-xs font-black text-tv-text uppercase mb-4 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-tv-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            Rincian Penerbangan
+                                        </h4>
+                                        <div class="space-y-4">
+                                            <div class="flex items-start gap-4">
+                                                <div class="flex flex-col items-center gap-1 mt-1">
+                                                    <div class="w-2 h-2 rounded-full border-2 border-tv-primary bg-white"></div>
+                                                    <div class="w-0.5 h-12 bg-tv-border border-dashed"></div>
+                                                    <div class="w-2 h-2 rounded-full bg-tv-accent"></div>
+                                                </div>
+                                                <div class="space-y-8">
+                                                    <div>
+                                                        <p class="text-sm font-black text-tv-text">{{ $result['departure_time'] }} · {{ $result['origin_name'] }} ({{ $result['origin'] }})</p>
+                                                        <p class="text-[11px] text-tv-muted mt-0.5">{{ \Carbon\Carbon::parse($departureDate)->format('d M Y') }}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-sm font-black text-tv-text">{{ $result['arrival_time'] }} · {{ $result['destination_name'] }} ({{ $result['destination'] }})</p>
+                                                        <p class="text-[11px] text-tv-muted mt-0.5">{{ \Carbon\Carbon::parse($departureDate)->format('d M Y') }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-black text-tv-text uppercase mb-4 flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-tv-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                                            Fasilitas & Bagasi
+                                        </h4>
+                                        <div class="bg-white rounded-xl p-4 border border-tv-border shadow-sm space-y-3">
+                                            <div class="flex items-center justify-between text-xs">
+                                                <span class="text-tv-muted font-bold">Bagasi Kabin</span>
+                                                <span class="text-tv-text font-black">7 kg</span>
+                                            </div>
+                                            <div class="flex items-center justify-between text-xs">
+                                                <span class="text-tv-muted font-bold">Bagasi Terdaftar</span>
+                                                <span class="text-tv-text font-black">20 kg</span>
+                                            </div>
+                                            <div class="pt-3 border-t border-tv-border">
+                                                <p class="text-[10px] font-black text-tv-muted uppercase mb-2">Amenities</p>
+                                                <div class="flex flex-wrap gap-2">
+                                                    @foreach($result['amenities'] as $amenity)
+                                                        <span class="px-2.5 py-1 bg-gray-50 rounded-lg text-[10px] font-bold text-tv-text border border-tv-border">{{ $amenity }}</span>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                @elseif($searching)
+                    <div class="flex flex-col items-center justify-center py-20 text-white">
+                        <svg class="animate-spin h-10 w-10 mb-4" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <p class="font-black uppercase tracking-widest text-sm">Mencari Penerbangan Terbaik...</p>
+                    </div>
+                @elseif(!empty($originSearch) && !empty($destinationSearch))
+                    <div class="tv-card p-12 text-center bg-white rounded-2xl shadow-xl">
+                        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-black text-tv-text mb-2">Maaf, Tidak Ada Penerbangan</h3>
+                        <p class="text-tv-muted text-sm max-w-sm mx-auto">Coba ganti tanggal atau rute pencarian Anda untuk melihat jadwal lainnya.</p>
+                        <button wire:click="changeDate('{{ now()->addDay()->format('Y-m-d') }}')" class="mt-8 btn-tv-primary px-8">Lihat Besok</button>
+                    </div>
+                @endif
+            </div>
         </div>
+    @endif
     </div>
 </div>

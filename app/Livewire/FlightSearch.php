@@ -28,6 +28,9 @@ class FlightSearch extends Component
     public $searching = false;
     public $isFullPage = false;
 
+    public $originOpen = false;
+    public $destinationOpen = false;
+
     // Filters
     public $filterAirlines = [];
     public $maxPrice = 0;
@@ -102,16 +105,16 @@ class FlightSearch extends Component
         return $dbQuery->limit(10)->get()->toArray();
     }
 
-    public function selectOrigin($iataCode, $name)
+    public function selectOrigin($iataCode, $city)
     {
         $this->origin = $iataCode;
-        $this->originSearch = "$name ($iataCode)";
+        $this->originSearch = "$city ($iataCode)";
     }
 
-    public function selectDestination($iataCode, $name)
+    public function selectDestination($iataCode, $city)
     {
         $this->destination = $iataCode;
-        $this->destinationSearch = "$name ($iataCode)";
+        $this->destinationSearch = "$city ($iataCode)";
     }
 
     public function refreshOriginSuggestions()
@@ -142,12 +145,12 @@ class FlightSearch extends Component
         if (!empty($this->origin)) {
             $apt = Airport::where('iata_code', $this->origin)->first();
             if ($apt)
-                $this->originSearch = "{$apt->name} ({$apt->iata_code})";
+                $this->originSearch = "{$apt->city} ({$apt->iata_code})";
         }
         if (!empty($this->destination)) {
             $apt = Airport::where('iata_code', $this->destination)->first();
             if ($apt)
-                $this->destinationSearch = "{$apt->name} ({$apt->iata_code})";
+                $this->destinationSearch = "{$apt->city} ({$apt->iata_code})";
         }
 
         if ($this->isFullPage && !empty($this->origin) && !empty($this->destination)) {
@@ -170,13 +173,16 @@ class FlightSearch extends Component
         }
 
         // Auto-detect codes if not selected but validly entered
-        if (empty($this->origin) && preg_match('/\(([A-Z]{3})\)$/', $this->originSearch, $matches)) {
+        $this->originSearch = trim($this->originSearch);
+        $this->destinationSearch = trim($this->destinationSearch);
+
+        if (empty($this->origin) && preg_match('/\(([A-Z]{3})\)/', $this->originSearch, $matches)) {
             $this->origin = $matches[1];
         } elseif (empty($this->origin) && strlen($this->originSearch) === 3) {
             $this->origin = strtoupper($this->originSearch);
         }
 
-        if (empty($this->destination) && preg_match('/\(([A-Z]{3})\)$/', $this->destinationSearch, $matches)) {
+        if (empty($this->destination) && preg_match('/\(([A-Z]{3})\)/', $this->destinationSearch, $matches)) {
             $this->destination = $matches[1];
         } elseif (empty($this->destination) && strlen($this->destinationSearch) === 3) {
             $this->destination = strtoupper($this->destinationSearch);
@@ -248,7 +254,7 @@ class FlightSearch extends Component
             ->whereHas('schedule.destinationAirport', function ($query) {
                 $query->where('iata_code', strtoupper($this->destination));
             })
-            ->whereDate('departure_datetime', $this->departureDate)
+            ->whereDate('flight_date', $this->departureDate)
             ->where('status', '!=', 'cancelled')
             ->get();
 
