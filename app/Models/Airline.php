@@ -23,6 +23,21 @@ class Airline extends Model
         'is_active' => 'boolean',
     ];
 
+    public function getLogoUrlAttribute($value): ?string
+    {
+        if (is_string($value) && trim($value) !== '') {
+            return $value;
+        }
+
+        $iataCode = strtoupper((string) ($this->attributes['iata_code'] ?? ''));
+
+        if ($iataCode === '') {
+            return null;
+        }
+
+        return "https://images.kiwi.com/airlines/64x64/{$iataCode}.png";
+    }
+
     public function aircraftInstances(): HasMany
     {
         return $this->hasMany(AircraftInstance::class);

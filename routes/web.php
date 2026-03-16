@@ -39,6 +39,7 @@ Route::middleware('auth')->group(function () {
 
     // Authenticated Booking Actions
     Route::delete('/booking/{id}', [BookingController::class, 'cancel'])->name('booking.cancel');
+    Route::post('/booking/{id}/refund', [BookingController::class, 'refund'])->name('booking.refund');
     Route::post('/booking/{id}/payment', [BookingController::class, 'processPayment'])->name('booking.payment.process');
     Route::get('/booking/{id}/checkin', [BookingController::class, 'checkIn'])->name('booking.checkin');
     Route::post('/booking/{id}/baggage', [BookingController::class, 'addBaggage'])->name('booking.baggage');

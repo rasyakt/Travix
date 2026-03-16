@@ -2,15 +2,14 @@
     {{-- ═══ Traveloka-Style Search Form ═══ --}}
     <div x-data="{ 
         tripType: @entangle('tripType'),
-        showReturn: false,
         passengersOpen: false,
         classOpen: false,
         adults: @entangle('adults'),
         children: @entangle('children'),
         infants: @entangle('infants'),
         seatClass: @entangle('seatClass'),
-        originOpen: @entangle('originOpen'),
-        destinationOpen: @entangle('destinationOpen')
+        originOpen: false,
+        destinationOpen: false
     }" class="relative z-20">
 
         {{-- Top Row: Toggles & Dropdowns --}}
@@ -19,11 +18,15 @@
                 <button type="button" @click="tripType = 'one-way'"
                     :class="tripType === 'one-way' ? 'bg-tv-primary text-white shadow-lg' : 'bg-gray-100 text-tv-secondary hover:bg-gray-200'"
                     class="px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200">
-                    Sekali Jalan / Pulang Pergi
+                    Sekali Jalan
                 </button>
-                <button type="button" @click="tripType = 'multi-city'"
-                    :class="tripType === 'multi-city' ? 'bg-tv-primary text-white shadow-lg' : 'bg-gray-100 text-tv-secondary hover:bg-gray-200'"
+                <button type="button" @click="tripType = 'round-trip'"
+                    :class="tripType === 'round-trip' ? 'bg-tv-primary text-white shadow-lg' : 'bg-gray-100 text-tv-secondary hover:bg-gray-200'"
                     class="px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200">
+                    Pulang Pergi
+                </button>
+                <button type="button" disabled
+                    class="px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200 bg-gray-100 text-tv-muted cursor-not-allowed opacity-70">
                     Multi-kota
                 </button>
             </div>
@@ -133,10 +136,8 @@
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>Tanggal pergi</div>
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" x-model="showReturn"
-                        class="w-4 h-4 rounded text-tv-primary focus:ring-tv-primary/20 bg-gray-100 border-gray-300 cursor-pointer">
-                    <span>Tanggal Pulang</span>
+                <div :class="tripType === 'round-trip' ? '' : 'text-tv-muted/50'">
+                    Tanggal Pulang
                 </div>
             </div>
         </div>
@@ -155,7 +156,9 @@
                         </svg>
                     </div>
                     <input type="text" wire:model.live.debounce.300ms="originSearch"
-                        @focus="originOpen = true; $wire.refreshOriginSuggestions(); $nextTick(() => $el.select())"
+                        wire:key="origin-input-field"
+                        @focus="originOpen = true; $wire.refreshOriginSuggestions(true); $nextTick(() => $el.select())"
+                        @click="originOpen = true; $wire.refreshOriginSuggestions(true); $el.select()"
                         class="w-full pl-12 pr-4 py-5 border-none focus:ring-0 text-tv-text font-bold placeholder-tv-muted"
                         placeholder="Asal (...)">
 
@@ -228,7 +231,9 @@
                         </svg>
                     </div>
                     <input type="text" wire:model.live.debounce.300ms="destinationSearch"
-                        @focus="destinationOpen = true; $wire.refreshDestinationSuggestions(); $nextTick(() => $el.select())"
+                        wire:key="destination-input-field"
+                        @focus="destinationOpen = true; $wire.refreshDestinationSuggestions(true); $nextTick(() => $el.select())"
+                        @click="destinationOpen = true; $wire.refreshDestinationSuggestions(true); $el.select()"
                         class="w-full pl-14 pr-4 py-5 border-none focus:ring-0 text-tv-text font-bold placeholder-tv-muted"
                         placeholder="Tujuan (...)">
 
@@ -295,18 +300,18 @@
 
                 {{-- Return Date --}}
                 <div class="flex-1 relative group bg-white transition-colors rounded-r-2xl"
-                    :class="showReturn ? 'bg-white hover:bg-gray-50/50' : 'bg-gray-50/80'">
+                    :class="tripType === 'round-trip' ? 'bg-white hover:bg-gray-50/50' : 'bg-gray-50/80'">
                     <div class="absolute left-4 top-1/2 -translate-y-1/2">
                         <svg class="w-5 h-5 transition-colors"
-                            :class="showReturn ? 'text-tv-primary' : 'text-tv-muted/30'" fill="none"
+                            :class="tripType === 'round-trip' ? 'text-tv-primary' : 'text-tv-muted/30'" fill="none"
                             stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                     </div>
-                    <input type="date" wire:model="returnDate" :disabled="!showReturn"
+                    <input type="date" wire:model="returnDate" :disabled="tripType !== 'round-trip'"
                         class="w-full pl-12 pr-4 py-5 border-none focus:ring-0 font-bold transition-all"
-                        :class="showReturn ? 'text-tv-text cursor-pointer' : 'text-tv-muted/30 cursor-not-allowed'">
+                        :class="tripType === 'round-trip' ? 'text-tv-text cursor-pointer' : 'text-tv-muted/30 cursor-not-allowed'">
                 </div>
             </div>
 
@@ -357,11 +362,11 @@
             <div class="flex items-center gap-3 min-w-max">
                 @foreach($dailyPrices as $price)
                     <button type="button" wire:click="changeDate('{{ $price['date'] }}')"
-                        class="flex flex-col items-center justify-center px-6 py-3 rounded-xl border transition-all
+                        class="min-w-[160px] flex flex-col items-center justify-center px-6 py-3 rounded-xl border transition-all
                         {{ $price['is_current'] 
                             ? 'bg-white text-tv-primary border-white shadow-lg scale-105 z-10' 
-                            : 'bg-white/10 text-white border-white/20 hover:bg-white/20' }}">
-                        <span class="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-70">{{ $price['label'] }}</span>
+                            : 'bg-white text-tv-text border-tv-border hover:border-tv-primary/30 hover:bg-blue-50/60 shadow-sm' }}">
+                        <span class="text-[10px] font-bold uppercase tracking-wider mb-1 {{ $price['is_current'] ? 'text-tv-primary/70' : 'text-tv-muted' }}">{{ $price['label'] }}</span>
                         <span class="text-sm font-black">Rp {{ number_format($price['price'], 0, ',', '.') }}</span>
                     </button>
                 @endforeach
@@ -484,8 +489,15 @@
                                                 <p class="text-[10px] text-tv-muted font-bold">/orang</p>
                                             </div>
                                         @endif
-                                        <button wire:click="selectFlight({{ $result['id'] ?? 0 }})"
-                                            class="btn-tv-primary text-[11px] py-2.5 px-6 font-black ml-auto md:ml-0 shadow-lg">PILIH</button>
+                                        @if(!empty($result['bookable']) && !empty($result['id']))
+                                            <button wire:click="selectFlight({{ $result['id'] }})"
+                                                class="btn-tv-primary text-[11px] py-2.5 px-6 font-black ml-auto md:ml-0 shadow-lg">PILIH</button>
+                                        @else
+                                            <button type="button" wire:click="notifyUnbookableFlight"
+                                                class="bg-gray-100 text-tv-muted border border-tv-border text-[11px] py-2.5 px-4 rounded-lg font-black ml-auto md:ml-0">
+                                                PARTNER API
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

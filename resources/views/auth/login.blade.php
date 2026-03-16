@@ -17,7 +17,7 @@
     </style>
 </head>
 
-<body class="bg-tv-bg min-h-screen antialiased overflow-hidden">
+<body class="bg-tv-bg h-screen antialiased overflow-hidden">
     <div class="flex h-screen">
         {{-- Left Side: Background Imagery --}}
         <div class="hidden lg:block w-1/2 relative overflow-hidden">
@@ -43,11 +43,12 @@
         </div>
 
         {{-- Right Side: Login Form --}}
-        <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white overflow-y-auto">
-            <div class="w-full max-w-md">
-                <div class="mb-10 relative">
-                    <a href="{{ route('home') }}"
-                        class="inline-flex items-center gap-2 text-tv-muted hover:text-tv-primary transition-colors mb-6 group">
+        <div class="w-full lg:w-1/2 bg-white overflow-y-auto scrollbar-thin">
+            <div class="min-h-full flex flex-col justify-center py-20 lg:py-28 px-8">
+                <div class="w-full max-w-md mx-auto">
+                    <div class="mb-12 relative">
+                        <a href="{{ route('home') }}"
+                            class="inline-flex items-center gap-2 text-tv-muted hover:text-tv-primary transition-colors mb-8 group">
                         <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none"
                             stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -147,6 +148,7 @@
                     Don't have an account? <a href="{{ route('register') }}"
                         class="text-tv-primary font-bold hover:underline">Create an account</a>
                 </p>
+                </div>
             </div>
         </div>
     </div>

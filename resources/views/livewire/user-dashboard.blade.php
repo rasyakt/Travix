@@ -79,7 +79,7 @@
                                     </div>
                                 @endif
                                 <div>
-                                    <p class="font-mono font-bold text-tv-primary text-sm">{{ $booking->booking_code }}</p>
+                                    <p class="font-mono font-bold text-tv-primary text-sm">{{ $booking->display_booking_code }}</p>
                                     <p class="text-xs text-tv-muted">{{ $flight->schedule->airline->name }}</p>
                                 </div>
                             </div>
@@ -129,12 +129,20 @@
                             <a href="{{ route('booking.show', $booking->id) }}" class="btn-tv-outline text-xs py-2 px-4">View
                                 Details</a>
                             @if(!$booking->passengers->first()->checkIn && $flight->departure_datetime->diffInHours(now()) <= 24 && $flight->departure_datetime->isFuture())
-                                <a href="{{ route('booking.checkIn', $booking->id) }}"
+                                <a href="{{ route('booking.checkin', $booking->id) }}"
                                     class="btn-tv-accent text-xs py-2 px-4">Check-in Now</a>
                             @endif
                             @if($booking->status === 'pending' && $flight->departure_datetime->diffInHours(now()) >= 24)
                                 <button wire:click="cancelBooking({{ $booking->id }})"
                                     class="btn-tv-ghost text-xs py-2 px-4 text-red-500 hover:text-red-600 hover:bg-red-50">Cancel</button>
+                            @endif
+                            @if($booking->status === 'confirmed' && $booking->payment && $booking->payment->status === 'success' && $booking->is_refundable)
+                                <form method="POST" action="{{ route('booking.refund', $booking->id) }}" class="inline"
+                                    onsubmit="return confirm('Lanjutkan refund tiket ini? Booking akan dibatalkan.')">
+                                    @csrf
+                                    <button type="submit"
+                                        class="btn-tv-ghost text-xs py-2 px-4 text-red-500 hover:text-red-600 hover:bg-red-50">Refund</button>
+                                </form>
                             @endif
                         </div>
                     </div>
@@ -184,7 +192,7 @@
                             </p>
                             <p class="text-xs text-[#a0aec0]">{{ $flight->departure_datetime->format('M d, Y') }}</p>
                         </div>
-                        <p class="font-mono text-xs text-tv-muted hidden sm:block">{{ $booking->booking_code }}</p>
+                        <p class="font-mono text-xs text-tv-muted hidden sm:block">{{ $booking->display_booking_code }}</p>
                         <a href="{{ route('booking.show', $booking->id) }}"
                             class="text-sm font-semibold text-tv-primary hover:text-[#0560c7] transition-colors shrink-0">View</a>
                     </div>

@@ -50,7 +50,7 @@ class Booking extends Model
 
         static::creating(function ($booking) {
             if (empty($booking->booking_code)) {
-                $booking->booking_code = strtoupper(Str::random(10));
+                $booking->booking_code = (string) Str::uuid();
             }
 
             if (empty($booking->booking_date)) {
@@ -143,6 +143,17 @@ class Booking extends Model
     public function getFlightAttribute()
     {
         return $this->flights->first();
+    }
+
+    public function getDisplayBookingCodeAttribute(): string
+    {
+        $normalizedCode = strtoupper(str_replace('-', '', (string) $this->booking_code));
+
+        if ($normalizedCode === '') {
+            return 'TRV-UNKNOWN';
+        }
+
+        return 'TRV-' . substr($normalizedCode, 0, 8);
     }
 
     public function getIsExpiredAttribute()

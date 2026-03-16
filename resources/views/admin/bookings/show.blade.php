@@ -13,7 +13,7 @@
             <div>
                 <h1 class="text-xl font-extrabold text-tv-text tracking-tight">Booking Details</h1>
                 <p class="text-xs text-tv-muted">Referral Code: <span
-                        class="font-mono font-bold text-tv-primary">{{ $booking->booking_code }}</span></p>
+                        class="font-mono font-bold text-tv-primary">{{ $booking->display_booking_code }}</span></p>
             </div>
         </div>
 

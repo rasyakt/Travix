@@ -20,8 +20,20 @@ class BookingController extends Controller
 {
     public function create()
     {
-        $flightId = request('flight');
-        $passengers = request('passengers', 1);
+        $flightId = (int) request('flight');
+        $passengers = max(1, (int) request('passengers', 1));
+
+        if ($flightId <= 0) {
+            return redirect()->route('flights.index')
+                ->with('error', 'Penerbangan tidak valid. Silakan pilih penerbangan yang tersedia.');
+        }
+
+        $flight = Flight::find($flightId);
+
+        if (!$flight) {
+            return redirect()->route('flights.index')
+                ->with('error', 'Penerbangan tidak ditemukan atau sudah tidak tersedia.');
+        }
 
         return view('bookings.create', compact('flightId', 'passengers'));
     }
@@ -153,18 +165,40 @@ class BookingController extends Controller
         // processPayment is still protected by 'auth' middleware in routes/web.php
         // but it's good to be explicit here
         $booking = Booking::with('payment')
-            ->where('user_id', Auth::id())
-            ->findOrFail($id);
+            ->where('id', $id)
+            ->where(function ($query) use ($id) {
+                $query->where('user_id', Auth::id());
+
+                if (in_array($id, session()->get('guest_booking_ids', []))) {
+                    $query->orWhereNull('user_id');
+                }
+            })
+            ->firstOrFail();
+
+        if (is_null($booking->user_id)) {
+            $booking->update(['user_id' => Auth::id()]);
+            $guestBookingIds = session()->get('guest_booking_ids', []);
+            session()->put('guest_booking_ids', array_values(array_filter($guestBookingIds, fn($bookingId) => (int) $bookingId !== (int) $id)));
+        }
 
         $request->validate([
             'payment_method' => 'required|in:credit_card,bank_transfer,e_wallet',
         ]);
 
         try {
+            if (!$booking->payment) {
+                $booking->payment()->create([
+                    'amount' => $booking->total_amount,
+                    'status' => PaymentStatus::PENDING->value,
+                    'payment_code' => 'PAY-' . strtoupper(Str::random(10)),
+                ]);
+                $booking->refresh();
+            }
+
             // Mock payment processing
             $booking->payment->update([
                 'payment_method' => $request->payment_method,
-                'status' => PaymentStatus::PAID->value,
+                'status' => PaymentStatus::SUCCESS->value,
                 'paid_at' => now(),
             ]);
 
@@ -176,7 +210,82 @@ class BookingController extends Controller
                 ->with('success', 'Payment successful! Your booking is confirmed.');
 
         } catch (\Exception $e) {
+            \Log::error('Payment Processing Error', [
+                'booking_id' => $id,
+                'user_id' => Auth::id(),
+                'message' => $e->getMessage(),
+            ]);
             return back()->with('error', 'Payment failed. Please try again.');
+        }
+    }
+
+    public function refund($id)
+    {
+        try {
+            $booking = Booking::with(['payment', 'bookingFlights.flight', 'passengers.checkIn'])
+                ->where('user_id', Auth::id())
+                ->findOrFail($id);
+
+            if (!$booking->payment || $booking->payment->status !== PaymentStatus::SUCCESS->value) {
+                return back()->with('error', 'Refund hanya tersedia untuk booking yang sudah dibayar.');
+            }
+
+            if (!$booking->is_refundable) {
+                return back()->with('error', 'Refund hanya dapat diproses paling lambat 24 jam sebelum keberangkatan.');
+            }
+
+            if ($booking->passengers->contains(fn($passenger) => $passenger->checkIn)) {
+                return back()->with('error', 'Refund tidak dapat diproses karena ada penumpang yang sudah check-in.');
+            }
+
+            $existingPaymentDetails = $booking->payment->payment_details ?? [];
+            if (!empty($existingPaymentDetails['refund'])) {
+                return back()->with('info', 'Refund untuk booking ini sudah pernah diproses.');
+            }
+
+            DB::transaction(function () use ($booking, $existingPaymentDetails) {
+                foreach ($booking->bookingFlights as $bookingFlight) {
+                    if ($bookingFlight->flight) {
+                        $bookingFlight->flight->increaseAvailableSeats(
+                            (int) ($bookingFlight->passenger_count ?? 1),
+                            $bookingFlight->travel_class_id
+                        );
+                    }
+                }
+
+                $refundAmount = (float) round((float) $booking->total_amount * 0.9, 2);
+                $paymentDetails = $existingPaymentDetails;
+                $paymentDetails['refund'] = [
+                    'requested_at' => now()->toDateTimeString(),
+                    'amount' => $refundAmount,
+                    'currency' => 'IDR',
+                    'policy' => '90_percent_refund',
+                    'reason' => 'user_requested',
+                ];
+
+                $booking->payment->update([
+                    'status' => PaymentStatus::CANCELLED->value,
+                    'payment_details' => $paymentDetails,
+                    'notes' => 'Refund approved via self-service flow.',
+                ]);
+
+                $booking->update([
+                    'status' => BookingStatus::CANCELLED->value,
+                    'expires_at' => now(),
+                ]);
+            });
+
+            return redirect()->route('booking.show', $booking->id)
+                ->with('success', 'Refund berhasil diproses. Dana akan dikembalikan sesuai kebijakan refund.');
+
+        } catch (\Exception $e) {
+            \Log::error('Refund Processing Error', [
+                'booking_id' => $id,
+                'user_id' => Auth::id(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Refund gagal diproses. Silakan coba lagi.');
         }
     }
 
@@ -248,7 +357,7 @@ class BookingController extends Controller
                 ->findOrFail($id);
 
             // Only allow cancellation if payment is pending or failed
-            if ($booking->payment && in_array($booking->payment->status, [PaymentStatus::PAID->value, PaymentStatus::REFUNDED->value])) {
+            if ($booking->payment && $booking->payment->status === PaymentStatus::SUCCESS->value) {
                 return back()->with('error', 'Cannot cancel paid bookings. Please contact customer service.');
             }
 

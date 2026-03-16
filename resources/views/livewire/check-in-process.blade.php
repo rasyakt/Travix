@@ -11,7 +11,7 @@
             <div>
                 <h1 class="text-2xl font-extrabold text-tv-text tracking-tight">Online Check-In</h1>
                 <p class="text-sm text-tv-muted">Booking <span
-                        class="font-mono font-bold text-tv-primary">{{ $booking->booking_code }}</span></p>
+                        class="font-mono font-bold text-tv-primary">{{ $booking->display_booking_code }}</span></p>
             </div>
         </div>
     </div>

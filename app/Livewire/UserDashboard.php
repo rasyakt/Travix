@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Booking;
+use App\Enums\PaymentStatus;
 use Illuminate\Support\Facades\Auth;
 
 class UserDashboard extends Component
@@ -62,7 +63,7 @@ class UserDashboard extends Component
 
             // Update payment status if needed
             if ($booking->payment) {
-                $booking->payment->update(['status' => 'refunded']);
+                $booking->payment->update(['status' => PaymentStatus::CANCELLED->value]);
             }
 
             session()->flash('success', 'Booking cancelled successfully.');

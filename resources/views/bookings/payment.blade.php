@@ -7,7 +7,7 @@
         <div class="mb-8">
             <h1 class="tv-section-title">Complete Payment</h1>
             <p class="tv-section-subtitle">Booking <span
-                    class="font-mono font-bold text-tv-primary">{{ $booking->booking_code }}</span></p>
+                    class="font-mono font-bold text-tv-primary">{{ $booking->display_booking_code }}</span></p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

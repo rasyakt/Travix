@@ -83,7 +83,7 @@
                                 class="absolute top-3 right-3 w-5 h-5 rounded-full bg-tv-primary flex items-center justify-center">
                                 <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
-                                        d="M16.707 5.293a1 1 0 001.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                                         clip-rule="evenodd" />
                                 </svg>
                             </div>
@@ -185,9 +185,44 @@
             </div>
         </div>
 
-        <div class="flex justify-end gap-3">
+        @guest
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+                <div class="flex items-start gap-3">
+                    <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-bold text-amber-900">Login masih diperlukan untuk pembayaran akhir</p>
+                        <p class="mt-1 text-xs leading-5 text-amber-800">
+                            Anda tetap bisa membuat booking sebagai tamu. Setelah klik Continue to Payment,
+                            Anda akan masuk ke halaman pembayaran, tetapi harus login untuk menyelesaikan pembayaran.
+                        </p>
+                        <div class="mt-3 flex flex-wrap items-center gap-3 text-xs">
+                            <a href="{{ route('login') }}" class="font-bold text-tv-primary hover:underline">Login sekarang</a>
+                            <span class="text-amber-700/80">atau lanjut sebagai tamu dulu lalu login saat pembayaran</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endguest
+
+        <div class="flex flex-wrap items-center justify-end gap-3">
             <a href="{{ route('flights.index') }}" class="btn-tv-ghost text-sm">Cancel</a>
-            <button type="submit" class="btn-tv-accent py-3 px-8 text-sm">Continue to Payment</button>
+            <button type="submit" class="btn-tv-accent py-3 px-8 text-sm">
+                @auth
+                    Continue to Payment
+                @else
+                    Continue to Payment
+                @endauth
+            </button>
         </div>
+        @guest
+            <p class="text-right text-[11px] font-medium text-tv-muted">
+                Setelah langkah ini, Anda akan diminta login sebelum proses pembayaran final.
+            </p>
+        @endguest
     </form>
 </div>

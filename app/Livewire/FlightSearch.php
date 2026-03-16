@@ -28,9 +28,6 @@ class FlightSearch extends Component
     public $searching = false;
     public $isFullPage = false;
 
-    public $originOpen = false;
-    public $destinationOpen = false;
-
     // Filters
     public $filterAirlines = [];
     public $maxPrice = 0;
@@ -47,9 +44,12 @@ class FlightSearch extends Component
         'origin' => ['except' => ''],
         'destination' => ['except' => ''],
         'departureDate' => ['except' => ''],
+        'returnDate' => ['except' => ''],
         'tripType' => ['except' => 'one-way'],
         'seatClass' => ['except' => 'Economy'],
         'adults' => ['except' => 1],
+        'children' => ['except' => 0],
+        'infants' => ['except' => 0],
     ];
 
     protected $rules = [
@@ -117,18 +117,35 @@ class FlightSearch extends Component
         $this->destinationSearch = "$city ($iataCode)";
     }
 
-    public function refreshOriginSuggestions()
+    public function updatedTripType($value)
     {
-        $this->originSuggestions = $this->getAirports($this->originSearch);
+        if ($value === 'multi-city') {
+            $this->tripType = 'one-way';
+            session()->flash('message', 'Mode multi-kota belum tersedia pada form pencarian ini.');
+            return;
+        }
+
+        if ($value === 'round-trip' && empty($this->returnDate)) {
+            $this->returnDate = now()->addDays(2)->format('Y-m-d');
+        }
     }
 
-    public function refreshDestinationSuggestions()
+    public function refreshOriginSuggestions($forcePopular = false)
     {
-        $this->destinationSuggestions = $this->getAirports($this->destinationSearch);
+        $this->originSuggestions = $this->getAirports($forcePopular ? '' : $this->originSearch);
+    }
+
+    public function refreshDestinationSuggestions($forcePopular = false)
+    {
+        $this->destinationSuggestions = $this->getAirports($forcePopular ? '' : $this->destinationSearch);
     }
 
     public function mount()
     {
+        if ($this->tripType === 'multi-city') {
+            $this->tripType = 'one-way';
+        }
+
         if (empty($this->departureDate)) {
             $this->departureDate = now()->format('Y-m-d');
         }
@@ -160,15 +177,23 @@ class FlightSearch extends Component
 
     public function searchFlights()
     {
+        if ($this->tripType === 'multi-city') {
+            session()->flash('message', 'Mode multi-kota belum tersedia pada form pencarian ini.');
+            return;
+        }
+
         // If not on full search page, redirect there with params
         if (!$this->isFullPage) {
             return redirect()->route('flights.index', [
                 'origin' => $this->origin ?: ($this->originSearch ? substr($this->originSearch, -4, 3) : ''),
                 'destination' => $this->destination ?: ($this->destinationSearch ? substr($this->destinationSearch, -4, 3) : ''),
                 'departureDate' => $this->departureDate,
+                'returnDate' => $this->tripType === 'round-trip' ? $this->returnDate : null,
                 'tripType' => $this->tripType,
                 'seatClass' => $this->seatClass,
                 'adults' => $this->adults,
+                'children' => $this->children,
+                'infants' => $this->infants,
             ]);
         }
 
@@ -188,7 +213,7 @@ class FlightSearch extends Component
             $this->destination = strtoupper($this->destinationSearch);
         }
 
-        $this->validate();
+        $this->validate($this->getValidationRules());
 
         $this->searching = true;
         $this->searchResults = [];
@@ -242,11 +267,15 @@ class FlightSearch extends Component
 
     protected function performSearch()
     {
+        $passengerCount = $this->getPassengerCount();
+        $travelClassId = $this->getSeatClassId();
+
         $dbFlights = Flight::with([
             'schedule.airline',
             'schedule.originAirport',
             'schedule.destinationAirport',
-            'schedule.aircraft'
+            'schedule.aircraft',
+            'seatPrices'
         ])
             ->whereHas('schedule.originAirport', function ($query) {
                 $query->where('iata_code', strtoupper($this->origin));
@@ -255,7 +284,14 @@ class FlightSearch extends Component
                 $query->where('iata_code', strtoupper($this->destination));
             })
             ->whereDate('flight_date', $this->departureDate)
-            ->where('status', '!=', 'cancelled')
+            ->available($passengerCount)
+            ->where(function ($query) use ($travelClassId, $passengerCount) {
+                $query->whereDoesntHave('seatPrices')
+                    ->orWhereHas('seatPrices', function ($seatPrices) use ($travelClassId, $passengerCount) {
+                        $seatPrices->where('travel_class_id', $travelClassId)
+                            ->where('available_seats', '>=', $passengerCount);
+                    });
+            })
             ->get();
 
         if ($dbFlights->isNotEmpty()) {
@@ -293,6 +329,11 @@ class FlightSearch extends Component
 
     protected function formatFlight($flight)
     {
+        $travelClassId = $this->getSeatClassId();
+        $classSeatPrice = $flight->relationLoaded('seatPrices')
+            ? $flight->seatPrices->firstWhere('travel_class_id', $travelClassId)
+            : null;
+
         return [
             'id' => $flight->id,
             'flight_number' => $flight->flight_number,
@@ -305,20 +346,69 @@ class FlightSearch extends Component
             'departure_time' => $flight->departure_datetime->format('H:i'),
             'arrival_time' => $flight->arrival_datetime->format('H:i'),
             'duration' => $flight->departure_datetime->diffInMinutes($flight->arrival_datetime),
-            'price' => $flight->current_price,
-            'available_seats' => $flight->available_seats,
+            'price' => (float) ($classSeatPrice?->price ?? $flight->getPriceForClass($travelClassId)),
+            'available_seats' => $classSeatPrice?->available_seats ?? $flight->available_seats,
             'aircraft' => $flight->schedule->aircraft->model ?? 'Unknown',
             'status' => $flight->status,
             'amenities' => $flight->schedule->aircraft->amenities ?? [],
+            'bookable' => true,
         ];
     }
 
     public function selectFlight($flightId)
     {
+        $flightId = (int) $flightId;
+
+        if ($flightId <= 0) {
+            session()->flash('message', 'Penerbangan ini belum dapat dipesan langsung. Silakan pilih penerbangan lain.');
+            return;
+        }
+
+        $flight = Flight::with('seatPrices')->find($flightId);
+
+        if (!$flight) {
+            session()->flash('message', 'Penerbangan tidak ditemukan atau sudah tidak tersedia. Silakan cari ulang.');
+            return;
+        }
+
+        $passengerCount = $this->getPassengerCount();
+        $travelClassId = $this->getSeatClassId();
+        $classAvailableSeats = $flight->getAvailableSeatsForClass($travelClassId);
+
+        if ($classAvailableSeats > 0 && $classAvailableSeats < $passengerCount) {
+            session()->flash('message', 'Kursi pada kelas yang dipilih tidak mencukupi jumlah penumpang Anda.');
+            return;
+        }
+
+        if ($flight->available_seats < $passengerCount) {
+            session()->flash('message', 'Sisa kursi tidak mencukupi jumlah penumpang Anda.');
+            return;
+        }
+
         return redirect()->route('booking.create', [
             'flight' => $flightId,
-            'passengers' => $this->adults + $this->children + $this->infants
+            'passengers' => $passengerCount
         ]);
+    }
+
+    public function notifyUnbookableFlight()
+    {
+        session()->flash('message', 'Maskapai ini berasal dari data partner API dan belum terhubung ke booking otomatis.');
+    }
+
+    protected function getValidationRules(): array
+    {
+        $rules = $this->rules;
+        $rules['returnDate'] = $this->tripType === 'round-trip'
+            ? 'required|date|after_or_equal:departureDate'
+            : 'nullable|date|after_or_equal:departureDate';
+
+        return $rules;
+    }
+
+    protected function getPassengerCount(): int
+    {
+        return max(1, (int) $this->adults + (int) $this->children + (int) $this->infants);
     }
 
     protected function getSeatClassId(): int
