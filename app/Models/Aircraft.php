@@ -50,6 +50,11 @@ class Aircraft extends Model
         return $this->hasMany(Schedule::class);
     }
 
+    public function cabinProfiles(): HasMany
+    {
+        return $this->hasMany(AirlineCabinProfile::class);
+    }
+
     // Scopes
     public function scopeByManufacturer($query, $manufacturerId)
     {

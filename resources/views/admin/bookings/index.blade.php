@@ -41,7 +41,7 @@
                                         <tr class="hover:bg-gray-50/50 transition-colors">
                                             <td class="px-6 py-4">
                                                 <span
-                                                    class="font-mono font-bold text-tv-primary text-sm">{{ $booking->booking_code }}</span>
+                                                    class="font-mono font-bold text-tv-primary text-sm">{{ $booking->display_booking_code }}</span>
                                             </td>
                                             <td class="px-6 py-4">
                                                 <p class="text-sm font-bold text-tv-text">{{ $booking->user->name }}</p>

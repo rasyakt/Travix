@@ -1,7 +1,14 @@
-<div>
+<div wire:poll.15s="refreshSeatAvailability">
     {{-- ═══ Travel Class Selection ═══ --}}
     <div class="tv-card p-6 mb-6">
         <h2 class="font-bold text-tv-text mb-4">Select Travel Class</h2>
+
+        @if($lockedTravelClassId)
+            <div class="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                Kelas perjalanan dikunci sesuai fare yang Anda pilih pada langkah sebelumnya.
+            </div>
+        @endif
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             @foreach($travelClasses as $class)
                 <label
@@ -10,7 +17,8 @@
                         'border-tv-primary bg-blue-50/50 shadow-sm' => $selectedTravelClassId == $class['id'],
                         'border-tv-border hover:border-[#d0d8e4]' => $selectedTravelClassId != $class['id'],
                     ])>
-                    <input type="radio" wire:model.live="selectedTravelClassId" value="{{ $class['id'] }}" class="sr-only">
+                    <input type="radio" wire:model.live="selectedTravelClassId" value="{{ $class['id'] }}" class="sr-only"
+                        @if($lockedTravelClassId && (int) $class['id'] !== (int) $lockedTravelClassId) disabled @endif>
                     <div class="flex flex-1 flex-col">
                         <span class="font-bold text-tv-text">{{ $class['name'] }}</span>
                         <span class="text-xs text-tv-muted mt-0.5">{{ $class['available_seats'] }} seats available</span>
@@ -56,6 +64,13 @@
                                 class="text-tv-muted">Exit</span>
                         </div>
                     </div>
+
+                    <p class="text-xs text-tv-muted mt-4">
+                        Catatan: seat map pada tahap ini berbasis konfigurasi model pesawat di sistem Travix (template), bukan layout live resmi maskapai secara real-time.
+                    </p>
+                    <p class="text-xs text-tv-muted mt-2">
+                        Ketersediaan kursi direfresh otomatis setiap 15 detik selama Anda berada di halaman ini.
+                    </p>
                 </div>
 
                 {{-- Aircraft Nose --}}

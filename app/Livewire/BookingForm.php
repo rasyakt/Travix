@@ -13,6 +13,8 @@ use App\Enums\PaymentStatus;
 use App\Models\BookingFlight;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class BookingForm extends Component
 {
@@ -93,13 +95,29 @@ class BookingForm extends Component
     public function createBooking()
     {
         $this->validate();
+        $transactionStarted = false;
 
         try {
+            $selectedClass = $this->travelClasses->firstWhere('id', $this->selectedClassId);
+
+            if (!$selectedClass) {
+                throw ValidationException::withMessages([
+                    'selectedClassId' => 'Pilih kelas penerbangan yang tersedia.',
+                ]);
+            }
+
+            if ((int) $selectedClass['available_seats'] < $this->numberOfPassengers) {
+                throw ValidationException::withMessages([
+                    'selectedClassId' => 'Kursi tersedia untuk kelas ini tidak cukup untuk jumlah penumpang Anda.',
+                ]);
+            }
+
             DB::beginTransaction();
+            $transactionStarted = true;
 
             // Create booking
             $booking = Booking::create([
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'status' => BookingStatus::PENDING->value,
                 'total_amount' => $this->totalPrice,
                 'base_fare' => $this->totalPrice, // Simplified for now
@@ -144,11 +162,24 @@ class BookingForm extends Component
 
             DB::commit();
 
-            session()->flash('success', 'Booking created successfully!');
-            return redirect()->route('booking.payment', $booking->id);
+            if (!Auth::check()) {
+                $guestBookingIds = session()->get('guest_booking_ids', []);
+                session()->put('guest_booking_ids', array_values(array_unique([...$guestBookingIds, $booking->id])));
+            }
+
+            session()->flash('success', 'Booking berhasil dibuat. Lanjutkan ke pemilihan kursi.');
+            return redirect()->route('booking.seats', $booking->id);
+
+        } catch (ValidationException $e) {
+            if ($transactionStarted) {
+                DB::rollBack();
+            }
+            throw $e;
 
         } catch (\Exception $e) {
-            DB::rollBack();
+            if ($transactionStarted) {
+                DB::rollBack();
+            }
             session()->flash('error', 'Failed to create booking. Please try again.');
             \Log::error('Booking Creation Error', [
                 'message' => $e->getMessage(),

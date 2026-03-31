@@ -19,7 +19,7 @@
             <div class="p-6 md:p-8 text-center border-b border-tv-border border-dashed relative">
                 <h1 class="text-xl font-extrabold text-tv-text uppercase tracking-tight">Boarding Pass</h1>
                 <p class="text-[10px] font-bold text-tv-muted uppercase tracking-widest mt-1">Passenger Copy ·
-                    {{ $booking->booking_code }}</p>
+                    {{ $booking->display_booking_code }}</p>
             </div>
 
             {{-- Flight Info --}}

@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Booking;
+use App\Enums\PaymentStatus;
 use Illuminate\Support\Facades\Auth;
 
 class UserDashboard extends Component
@@ -19,6 +20,14 @@ class UserDashboard extends Component
 
     public function loadBookings()
     {
+        Booking::with(['payment', 'passengers.seatAssignment'])
+            ->where('user_id', Auth::id())
+            ->where('status', 'pending')
+            ->get()
+            ->each(function (Booking $booking) {
+                $booking->expirePendingReservation();
+            });
+
         $allBookings = Booking::with([
             'flights.schedule.originAirport',
             'flights.schedule.destinationAirport',
@@ -53,7 +62,9 @@ class UserDashboard extends Component
 
             // Check if booking can be cancelled (e.g., at least 24 hours before departure)
             $flight = $booking->flights->first();
-            if ($flight && $flight->departure_datetime->diffInHours(now()) < 24) {
+            $hoursUntilDeparture = $flight ? now()->diffInHours($flight->departure_datetime, false) : null;
+
+            if (!is_null($hoursUntilDeparture) && $hoursUntilDeparture < 24) {
                 session()->flash('error', 'Cannot cancel booking less than 24 hours before departure.');
                 return;
             }
@@ -62,7 +73,7 @@ class UserDashboard extends Component
 
             // Update payment status if needed
             if ($booking->payment) {
-                $booking->payment->update(['status' => 'refunded']);
+                $booking->payment->update(['status' => PaymentStatus::CANCELLED->value]);
             }
 
             session()->flash('success', 'Booking cancelled successfully.');

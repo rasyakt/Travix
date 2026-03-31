@@ -4,7 +4,7 @@
 
 @section('content')
     {{-- ═══ Premium Hero Section ═══ --}}
-    <div class="relative min-h-[700px] flex items-center justify-center pt-24 pb-36">
+    <div class="relative min-h-screen flex items-center justify-center pt-16 pb-12">
         {{-- Hero Background --}}
         <div class="absolute inset-0 z-0 overflow-hidden">
             <div class="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10s] hover:scale-110" 
@@ -25,32 +25,32 @@
                 <span class="text-[10px] font-black uppercase tracking-widest text-white/90">Premium Airline Partner</span>
             </div> -->
             
-            <h1 class="text-5xl md:text-8xl font-black mb-8 tracking-tighter leading-[0.9] drop-shadow-2xl">
+            <h1 class="text-5xl md:text-7xl font-black mb-4 tracking-tighter leading-[0.9] drop-shadow-2xl">
                 Elevate Your <br> 
                 <span class="text-transparent bg-clip-text bg-linear-to-r from-tv-primary via-blue-400 to-tv-accent">Standard</span>
             </h1>
-            <p class="text-lg md:text-xl font-medium max-w-2xl mx-auto text-white/70 mb-14 leading-relaxed drop-shadow-md">
+            <p class="text-base md:text-lg font-medium max-w-xl mx-auto text-white/70 mb-6 leading-relaxed drop-shadow-md">
                 Experience air travel as it was meant to be. Simple, luxury, and transparent booking for the discerning traveler.
             </p>
 
             {{-- ═══ Search Widget ═══ --}}
             <div x-data="{ activeTab: 'flights' }" class="max-w-5xl mx-auto">
                 {{-- Tabs --}}
-                <div class="flex items-center gap-2 mb-0 px-4">
+                <div class="flex items-center gap-0 mb-0 px-0">
                     <button @click="activeTab = 'flights'" 
-                        :class="activeTab === 'flights' ? 'bg-white text-tv-secondary shadow-lg' : 'bg-white/5 text-white/60 hover:bg-white/10'"
+                        :class="activeTab === 'flights' ? 'bg-white text-tv-secondary' : 'bg-white/5 text-white/60 hover:bg-white/10'"
                         class="px-8 py-4 rounded-t-3xl text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-3">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                         Flights
                     </button>
                     <button @click="activeTab = 'hotels'" 
-                        :class="activeTab === 'hotels' ? 'bg-white text-tv-secondary shadow-lg' : 'bg-white/5 text-white/60 hover:bg-white/10'"
+                        :class="activeTab === 'hotels' ? 'bg-white text-tv-secondary' : 'bg-white/5 text-white/60 hover:bg-white/10'"
                         class="px-8 py-4 rounded-t-3xl text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-3">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                         Stays
                     </button>
                     <button @click="activeTab = 'cars'" 
-                        :class="activeTab === 'cars' ? 'bg-white text-tv-secondary shadow-lg' : 'bg-white/5 text-white/60 hover:bg-white/10'"
+                        :class="activeTab === 'cars' ? 'bg-white text-tv-secondary' : 'bg-white/5 text-white/60 hover:bg-white/10'"
                         class="px-8 py-4 rounded-t-3xl text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-3">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         Cars
@@ -58,7 +58,8 @@
                 </div>
 
                 {{-- Tab Content --}}
-                <div class="bg-white rounded-b-[40px] rounded-tr-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] p-8 md:p-10 text-tv-secondary border border-gray-100 overflow-visible">
+                <div :class="activeTab === 'flights' ? 'rounded-tl-none' : 'rounded-tl-[40px]'"
+                    class="bg-white rounded-b-[40px] rounded-tr-[40px] p-8 md:p-10 text-tv-secondary border border-gray-100 overflow-visible">
                     {{-- Flight Search Tab --}}
                     <div x-show="activeTab === 'flights'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
                         @livewire('flight-search', ['minimal' => true])
@@ -178,11 +179,15 @@
                     
                     <div class="flex flex-wrap items-center justify-center md:justify-start gap-6">
                         <a href="#" class="flex items-center gap-4 bg-white text-tv-secondary px-8 py-5 rounded-[24px] font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-xl">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.1 2.48-1.34.03-1.77-.79-3.29-.79-1.53 0-1.99.77-3.26.82-1.31.05-2.26-1.22-3.11-2.45-1.75-2.53-3.08-7.15-1.27-10.3 0.9-1.56 2.49-2.54 4.23-2.57 1.32-.03 2.56.88 3.37.88.8 0 2.29-1.09 3.86-0.93 0.65.03 2.49.26 3.67 1.99-0.1 0.06-2.19 1.28-2.16 3.82.03 3.03 2.62 4.04 2.66 4.05-0.02.06-.41 1.4-1.34 2.76l-.01.01zM15.34 1.13c0.7-0.85 1.17-2.03 1.04-3.22-1.02.04-2.25.68-2.98 1.54-0.65.75-1.22 1.96-1.07 3.12 1.14.09 2.31-.6 3.01-1.44z"/></svg>
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.1 2.48-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .76-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.36 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                            </svg>
                             App Store
                         </a>
                         <a href="#" class="flex items-center gap-4 border-2 border-white/20 bg-white/5 backdrop-blur-md text-white px-8 py-5 rounded-[24px] font-black text-sm uppercase tracking-widest hover:bg-white/10 transition-all">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M3.609 1.814L13.792 12 3.61 22.186c-.18.18-.28.43-.28.69 0 .54.44.98.98.98.26 0 .51-.1.69-.28l10.875-10.875c.38-.38.38-1.01 0-1.39L5 1.114C4.82.934 4.571.834 4.31.834c-.54 0-.98.44-.98.98 0 .26.1.51.279.699v.001zM15.897 12l5.084 5.084c.38.38 1.01.38 1.39 0s.38-1.01 0-1.39L17.287 12l5.084-5.084c.38-.38.38-1.01 0-1.39s-1.01-.38-1.39 0L15.897 12z"/></svg>
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M3.609 1.814L13.792 12 3.609 22.186c-.18.18-.344.094-.344-.14V1.954c0-.234.164-.32.344-.14zm11.167 10.186l3.528 2.037c.725.418.725 1.096 0 1.514l-3.528 2.037-2.909-2.859 2.909-2.729zm-4.721 3.292l3.435 3.375-8.083 4.667c-.725.418-1.185.163-1.021-.567l5.669-7.475zm0-6.584l-5.669-7.475c-.164-.73.296-.985 1.021-.567l8.083 4.667-3.435 3.375z" />
+                            </svg>
                             Play Store
                         </a>
                     </div>

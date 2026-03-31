@@ -4,12 +4,52 @@
 
 @section('content')
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        @if (session()->has('success'))
-            <div class="mb-5 p-4 bg-green-50 border border-green-200 text-green-700 rounded-2xl flex items-center gap-3">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <p class="text-sm font-medium">{{ session('success') }}</p>
+        @php
+            $isPaid = $booking->payment && $booking->payment->status === 'success';
+            $currentFlowStep = 2;
+            if ($booking->passengers->contains(fn($passenger) => $passenger->seatAssignment)) {
+                $currentFlowStep = 3;
+            }
+            if ($booking->payment && in_array($booking->payment->status, ['pending', 'processing'])) {
+                $currentFlowStep = 4;
+            }
+            if ($isPaid && $booking->status === 'confirmed') {
+                $currentFlowStep = 5;
+            }
+
+            $estimatedRefundAmount = (float) round((float) $booking->total_amount * 0.9, 0);
+            $firstFlight = $booking->flights->first();
+            $hoursUntilDeparture = $firstFlight ? now()->diffInHours($firstFlight->departure_datetime, false) : null;
+            $hasCheckedInPassenger = $booking->passengers->contains(fn($passenger) => $passenger->checkIn);
+            $hasPassengerWithoutSeat = $booking->passengers->contains(fn($passenger) => !$passenger->seatAssignment);
+            $canShowCheckInAction = !$hasCheckedInPassenger && !$hasPassengerWithoutSeat && $booking->canCheckIn();
+
+            $refundBlockedReason = null;
+            if (!$isPaid) {
+                $refundBlockedReason = 'Refund hanya tersedia untuk booking yang sudah dibayar.';
+            } elseif ($booking->status !== 'confirmed') {
+                $refundBlockedReason = 'Refund hanya tersedia untuk booking berstatus confirmed.';
+            } elseif ($hasCheckedInPassenger) {
+                $refundBlockedReason = 'Refund tidak tersedia karena ada penumpang yang sudah check-in.';
+            } elseif (is_null($hoursUntilDeparture)) {
+                $refundBlockedReason = 'Data jadwal penerbangan tidak ditemukan untuk proses refund.';
+            } elseif ($hoursUntilDeparture <= 0) {
+                $refundBlockedReason = 'Refund ditutup karena jadwal keberangkatan sudah lewat.';
+            } elseif ($hoursUntilDeparture <= 24) {
+                $refundBlockedReason = 'Refund hanya bisa diproses jika masih lebih dari 24 jam sebelum keberangkatan.';
+            }
+        @endphp
+
+        @include('bookings.partials.flow-steps', ['currentStep' => $currentFlowStep])
+
+        @if($booking->status === 'pending' && $booking->expires_at)
+            <div class="mb-6">
+                @include('bookings.partials.payment-countdown', [
+                    'expiresAt' => $booking->expires_at,
+                    'refreshUrl' => route('booking.show', $booking->id),
+                    'title' => 'Booking ini masih menunggu pembayaran',
+                    'description' => 'Selesaikan pembayaran sebelum waktu habis agar booking tidak otomatis dibatalkan.',
+                ])
             </div>
         @endif
 
@@ -64,9 +104,37 @@
             <div class="inline-flex flex-col items-center bg-tv-bg px-8 py-4 rounded-xl border border-tv-border">
                 <span class="tv-label text-[9px] mb-0.5">Booking Code</span>
                 <span
-                    class="font-mono font-extrabold text-tv-primary text-2xl tracking-tight">{{ $booking->booking_code }}</span>
+                    class="font-mono font-extrabold text-tv-primary text-2xl tracking-tight">{{ $booking->display_booking_code }}</span>
             </div>
         </div>
+
+        @if($isPaid && $booking->status === 'confirmed')
+            <div class="tv-card p-5 mb-8 border border-amber-200 bg-amber-50/60">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-extrabold text-amber-800 uppercase tracking-wide">Opsi Refund</h3>
+                        <p class="text-xs text-amber-700 mt-1">Refund mandiri tersedia hingga 24 jam sebelum jadwal keberangkatan.</p>
+                        <p class="text-xs text-amber-700 mt-1">Estimasi refund: <span class="font-bold">Rp {{ number_format($estimatedRefundAmount, 0, ',', '.') }}</span> (90% dari total pembayaran)</p>
+                    </div>
+                    @if($booking->is_refundable)
+                        <form method="POST" action="{{ route('booking.refund', $booking->id) }}"
+                            onsubmit="return confirm('Proses refund tiket ini sekarang? Booking akan dibatalkan.')">
+                            @csrf
+                            <button type="submit" class="btn-tv-ghost py-2.5 px-5 text-red-600 hover:bg-red-50 border border-red-200">
+                                Request Refund
+                            </button>
+                        </form>
+                    @else
+                        <div class="text-right">
+                            <span class="tv-badge bg-gray-100 text-tv-muted border border-tv-border">Refund Window Closed</span>
+                            @if($refundBlockedReason)
+                                <p class="text-[11px] text-tv-muted mt-2 max-w-xs">{{ $refundBlockedReason }}</p>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
 
         {{-- E-Ticket --}}
         <div class="tv-card mb-8">
@@ -223,7 +291,7 @@
                     Pay Now
                 </a>
             @elseif($booking->status === 'confirmed')
-                @if(!$booking->passengers->first()->seatAssignment)
+                @if($hasPassengerWithoutSeat)
                     <a href="{{ route('booking.seats', $booking->id) }}" class="btn-tv-accent py-3.5 text-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -231,8 +299,8 @@
                         </svg>
                         Choose Seats
                     </a>
-                @elseif($booking->flights->first()->departure_datetime->diffInHours(now()) <= 24 && $booking->flights->first()->departure_datetime->isFuture())
-                    <a href="{{ route('booking.checkIn', $booking->id) }}" class="btn-tv-accent py-3.5 text-center gap-2">
+                @elseif($canShowCheckInAction)
+                    <a href="{{ route('booking.checkin', $booking->id) }}" class="btn-tv-accent py-3.5 text-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

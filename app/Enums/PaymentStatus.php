@@ -5,18 +5,20 @@ namespace App\Enums;
 enum PaymentStatus: string
 {
     case PENDING = 'pending';
-    case PAID = 'paid';
+    case PROCESSING = 'processing';
+    case SUCCESS = 'success';
     case FAILED = 'failed';
-    case REFUNDED = 'refunded';
+    case EXPIRED = 'expired';
     case CANCELLED = 'cancelled';
 
     public function label(): string
     {
         return match ($this) {
             self::PENDING => 'Pending',
-            self::PAID => 'Paid',
+            self::PROCESSING => 'Processing',
+            self::SUCCESS => 'Paid',
             self::FAILED => 'Failed',
-            self::REFUNDED => 'Refunded',
+            self::EXPIRED => 'Expired',
             self::CANCELLED => 'Cancelled',
         };
     }
@@ -25,9 +27,10 @@ enum PaymentStatus: string
     {
         return match ($this) {
             self::PENDING => 'yellow',
-            self::PAID => 'green',
+            self::PROCESSING => 'blue',
+            self::SUCCESS => 'green',
             self::FAILED => 'red',
-            self::REFUNDED => 'gray',
+            self::EXPIRED => 'gray',
             self::CANCELLED => 'gray',
         };
     }

@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FlightController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\PaymentWebhookController;
 
 // Home
 Route::get('/', function () {
@@ -21,6 +22,13 @@ Route::post('/register', [RegisterController::class, 'store']);
 Route::get('/auth/google', [SocialiteController::class, 'redirectToGoogle'])->name('login.google');
 Route::get('/auth/google/callback', [SocialiteController::class, 'handleGoogleCallback']);
 Route::post('/logout', [SocialiteController::class, 'logout'])->name('logout');
+
+if (config('payment.provider') === 'midtrans') {
+    Route::post('/payments/webhooks/midtrans', [PaymentWebhookController::class, 'handleMidtrans'])
+        ->middleware('throttle:midtrans-webhook')
+        ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
+        ->name('payments.webhook.midtrans');
+}
 
 // Protected Routes
 // Guest Accessible Booking Flow
@@ -39,6 +47,7 @@ Route::middleware('auth')->group(function () {
 
     // Authenticated Booking Actions
     Route::delete('/booking/{id}', [BookingController::class, 'cancel'])->name('booking.cancel');
+    Route::post('/booking/{id}/refund', [BookingController::class, 'refund'])->name('booking.refund');
     Route::post('/booking/{id}/payment', [BookingController::class, 'processPayment'])->name('booking.payment.process');
     Route::get('/booking/{id}/checkin', [BookingController::class, 'checkIn'])->name('booking.checkin');
     Route::post('/booking/{id}/baggage', [BookingController::class, 'addBaggage'])->name('booking.baggage');

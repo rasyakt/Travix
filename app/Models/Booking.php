@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -50,7 +51,7 @@ class Booking extends Model
 
         static::creating(function ($booking) {
             if (empty($booking->booking_code)) {
-                $booking->booking_code = strtoupper(Str::random(10));
+                $booking->booking_code = (string) Str::uuid();
             }
 
             if (empty($booking->booking_date)) {
@@ -102,6 +103,11 @@ class Booking extends Model
         return $this->hasManyThrough(Baggage::class, BookingPassenger::class);
     }
 
+    public function seatAssignments(): HasManyThrough
+    {
+        return $this->hasManyThrough(SeatAssignment::class, BookingPassenger::class, 'booking_id', 'booking_passenger_id');
+    }
+
     // Scopes
     public function scopeActive($query)
     {
@@ -145,6 +151,17 @@ class Booking extends Model
         return $this->flights->first();
     }
 
+    public function getDisplayBookingCodeAttribute(): string
+    {
+        $normalizedCode = strtoupper(str_replace('-', '', (string) $this->booking_code));
+
+        if ($normalizedCode === '') {
+            return 'TRV-UNKNOWN';
+        }
+
+        return 'TRV-' . substr($normalizedCode, 0, 8);
+    }
+
     public function getIsExpiredAttribute()
     {
         if ($this->status !== 'pending') {
@@ -171,14 +188,17 @@ class Booking extends Model
         }
 
         // Check if first flight is more than 24 hours away
-        $firstFlight = $this->bookingFlights()->first()?->flight;
+        $firstFlight = $this->relationLoaded('flights')
+            ? $this->flights->first()
+            : $this->bookingFlights()->with('flight')->first()?->flight;
 
         if (!$firstFlight) {
             return false;
         }
 
-        return $firstFlight->departure_datetime->isFuture() &&
-            $firstFlight->departure_datetime->diffInHours(now()) > 24;
+        $hoursUntilDeparture = now()->diffInHours($firstFlight->departure_datetime, false);
+
+        return $hoursUntilDeparture > 24;
     }
 
     public function getTotalPriceWithFeesAttribute()
@@ -198,20 +218,38 @@ class Booking extends Model
 
     public function canCheckIn()
     {
-        if ($this->status !== 'confirmed' || !$this->is_paid) {
-            return false;
+        return $this->check_in_blocked_reason === null;
+    }
+
+    public function getCheckInBlockedReasonAttribute(): ?string
+    {
+        if ($this->status !== 'confirmed') {
+            return 'Check-in hanya tersedia untuk booking berstatus confirmed.';
         }
 
-        // Check if within check-in window (24 hours to 3 hours before departure)
-        $firstFlight = $this->bookingFlights()->first()?->flight;
+        if (!$this->is_paid) {
+            return 'Check-in hanya tersedia untuk booking yang sudah dibayar.';
+        }
+
+        $firstFlight = $this->relationLoaded('flights')
+            ? $this->flights->first()
+            : $this->bookingFlights()->with('flight')->first()?->flight;
 
         if (!$firstFlight) {
-            return false;
+            return 'Data jadwal penerbangan tidak ditemukan.';
         }
 
-        $hoursUntilDeparture = $firstFlight->departure_datetime->diffInHours(now());
+        $hoursUntilDeparture = now()->diffInHours($firstFlight->departure_datetime, false);
 
-        return $hoursUntilDeparture <= 24 && $hoursUntilDeparture >= 3;
+        if ($hoursUntilDeparture > 24) {
+            return 'Online check-in baru tersedia 24 jam sebelum keberangkatan.';
+        }
+
+        if ($hoursUntilDeparture < 3) {
+            return 'Online check-in ditutup 3 jam sebelum keberangkatan.';
+        }
+
+        return null;
     }
 
     public function calculateTotalAmount()
@@ -238,12 +276,34 @@ class Booking extends Model
 
     public function markAsExpired()
     {
-        if ($this->is_expired) {
-            $this->update(['status' => 'cancelled']);
-            return true;
+        return $this->expirePendingReservation();
+    }
+
+    public function expirePendingReservation(): bool
+    {
+        if (!$this->is_expired) {
+            return false;
         }
 
-        return false;
+        $paymentDetails = $this->payment?->payment_details ?? [];
+        $paymentDetails['expired_at'] = now()->toDateTimeString();
+        $paymentDetails['expired_reason'] = 'payment_window_elapsed';
+
+        $this->seatAssignments()->delete();
+
+        if ($this->payment && in_array($this->payment->status, ['pending', 'processing', 'failed'], true)) {
+            $this->payment->update([
+                'status' => PaymentStatus::EXPIRED->value,
+                'expires_at' => now(),
+                'payment_details' => $paymentDetails,
+            ]);
+        }
+
+        $this->update([
+            'status' => 'cancelled',
+        ]);
+
+        return true;
     }
 
     public function cancel()
