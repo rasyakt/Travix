@@ -13,6 +13,7 @@ use App\Enums\BookingStatus;
 use App\Http\Requests\StoreBookingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -99,6 +100,7 @@ class BookingController extends Controller
             // Create payment record
             Payment::create([
                 'booking_id' => $booking->id,
+                'payment_code' => 'PAY-' . strtoupper(Str::random(10)),
                 'amount' => $totalAmount,
                 'status' => PaymentStatus::PENDING->value,
             ]);
@@ -141,6 +143,11 @@ class BookingController extends Controller
             $booking = $query->findOrFail($id);
         }
 
+        if ($booking->expirePendingReservation()) {
+            return redirect()->route('booking.show', $booking->id)
+                ->with('info', 'Booking otomatis dibatalkan karena batas waktu pembayaran telah habis. Kursi yang dipilih sudah dilepas kembali.');
+        }
+
         return view('bookings.show', compact('booking'));
     }
 
@@ -155,6 +162,28 @@ class BookingController extends Controller
                 return redirect()->route('login')->with('info', 'Please login to proceed with payment.');
             }
             $booking = $query->findOrFail($id);
+        }
+
+        if ($booking->expirePendingReservation()) {
+            return redirect()->route('booking.show', $booking->id)
+                ->with('info', 'Booking sudah kedaluwarsa. Silakan lakukan pemesanan baru.');
+        }
+
+        $booking->loadMissing('passengers.seatAssignment');
+
+        if ($booking->status === BookingStatus::CANCELLED->value) {
+            return redirect()->route('booking.show', $booking->id)
+                ->with('error', 'Booking sudah dibatalkan dan tidak dapat diproses pembayarannya.');
+        }
+
+        if ($booking->passengers->contains(fn($passenger) => !$passenger->seatAssignment)) {
+            return redirect()->route('booking.seats', $booking->id)
+                ->with('error', 'Pilih kursi untuk semua penumpang sebelum pembayaran.');
+        }
+
+        if ($booking->payment && $booking->payment->status === PaymentStatus::SUCCESS->value) {
+            return redirect()->route('booking.show', $booking->id)
+                ->with('info', 'Pembayaran booking ini sudah berhasil diproses.');
         }
 
         return view('bookings.payment', compact('booking'));
@@ -185,29 +214,122 @@ class BookingController extends Controller
             'payment_method' => 'required|in:credit_card,bank_transfer,e_wallet',
         ]);
 
+        $paymentProvider = (string) config('payment.provider', 'dummy');
+        $dummyAutoApprove = (bool) config('payment.dummy_auto_approve', true);
+
+        $processingLock = Cache::lock("booking:{$id}:process-payment", 10);
+        if (!$processingLock->get()) {
+            return back()->with('info', 'Pembayaran untuk booking ini sedang diproses. Silakan tunggu beberapa detik.');
+        }
+
         try {
-            if (!$booking->payment) {
-                $booking->payment()->create([
-                    'amount' => $booking->total_amount,
-                    'status' => PaymentStatus::PENDING->value,
-                    'payment_code' => 'PAY-' . strtoupper(Str::random(10)),
+            $result = DB::transaction(function () use ($booking, $request, $paymentProvider, $dummyAutoApprove) {
+                /** @var Booking $lockedBooking */
+                $lockedBooking = Booking::with(['payment', 'bookingFlights.flight', 'passengers.seatAssignment'])
+                    ->where('id', $booking->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ($lockedBooking->expirePendingReservation()) {
+                    return ['type' => 'error', 'message' => 'Booking sudah kedaluwarsa. Silakan lakukan pemesanan baru.'];
+                }
+
+                if ($lockedBooking->status === BookingStatus::CANCELLED->value) {
+                    return ['type' => 'error', 'message' => 'Booking sudah dibatalkan dan tidak dapat diproses pembayarannya.'];
+                }
+
+                if ($lockedBooking->status === BookingStatus::COMPLETED->value) {
+                    return ['type' => 'error', 'message' => 'Booking sudah selesai dan tidak memerlukan pembayaran lagi.'];
+                }
+
+                if ($lockedBooking->passengers->contains(fn($passenger) => !$passenger->seatAssignment)) {
+                    return [
+                        'type' => 'redirect-seats',
+                        'message' => 'Pilih kursi untuk semua penumpang sebelum pembayaran.',
+                    ];
+                }
+
+                if (!$lockedBooking->payment) {
+                    $lockedBooking->payment()->create([
+                        'amount' => $lockedBooking->total_amount,
+                        'status' => PaymentStatus::PENDING->value,
+                        'payment_code' => 'PAY-' . strtoupper(Str::random(10)),
+                    ]);
+                    $lockedBooking->load('payment');
+                }
+
+                if ($lockedBooking->payment->status === PaymentStatus::SUCCESS->value) {
+                    return ['type' => 'info', 'message' => 'Pembayaran booking ini sudah berhasil diproses sebelumnya.'];
+                }
+
+                if (!in_array($lockedBooking->payment->status, [PaymentStatus::PENDING->value, PaymentStatus::FAILED->value, PaymentStatus::PROCESSING->value], true)) {
+                    return ['type' => 'error', 'message' => 'Status pembayaran saat ini tidak dapat diproses ulang.'];
+                }
+
+                if ($paymentProvider !== 'dummy') {
+                    return [
+                        'type' => 'error',
+                        'message' => 'Mode payment gateway eksternal belum diaktifkan untuk environment ini. Gunakan PAYMENT_PROVIDER=dummy selama tahap pengembangan.',
+                    ];
+                }
+
+                $paymentDetails = $lockedBooking->payment->payment_details ?? [];
+                $inventoryReserved = (bool) ($paymentDetails['inventory_reserved'] ?? false);
+
+                if (!$inventoryReserved) {
+                    foreach ($lockedBooking->bookingFlights as $bookingFlight) {
+                        $lockedFlight = Flight::where('id', $bookingFlight->flight_id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if (!$lockedFlight || !$lockedFlight->decreaseAvailableSeats((int) ($bookingFlight->passenger_count ?? 1), $bookingFlight->travel_class_id)) {
+                            throw new \RuntimeException('Kursi tidak tersedia lagi untuk salah satu segmen penerbangan.');
+                        }
+                    }
+
+                    $paymentDetails['inventory_reserved'] = true;
+                    $paymentDetails['inventory_reserved_at'] = now()->toDateTimeString();
+                }
+
+                $paymentDetails['provider'] = 'dummy';
+                $paymentDetails['dummy_transaction_id'] = 'DUMMY-' . strtoupper(Str::random(12));
+                $paymentDetails['dummy_processed_at'] = now()->toDateTimeString();
+
+                // Mock payment processing
+                $lockedBooking->payment->update([
+                    'payment_method' => $request->payment_method,
+                    'status' => $dummyAutoApprove ? PaymentStatus::SUCCESS->value : PaymentStatus::PROCESSING->value,
+                    'paid_at' => $dummyAutoApprove ? now() : null,
+                    'payment_details' => $paymentDetails,
                 ]);
-                $booking->refresh();
+
+                if ($dummyAutoApprove) {
+                    $lockedBooking->update([
+                        'status' => BookingStatus::CONFIRMED->value,
+                    ]);
+                }
+
+                if ($dummyAutoApprove) {
+                    return ['type' => 'success', 'message' => 'Payment successful! Your booking is confirmed.'];
+                }
+
+                return ['type' => 'info', 'message' => 'Dummy payment dibuat dengan status processing. Anda bisa approve manual di environment development.'];
+            });
+
+            if ($result['type'] === 'redirect-seats') {
+                return redirect()->route('booking.seats', $booking->id)->with('error', $result['message']);
             }
 
-            // Mock payment processing
-            $booking->payment->update([
-                'payment_method' => $request->payment_method,
-                'status' => PaymentStatus::SUCCESS->value,
-                'paid_at' => now(),
-            ]);
+            if ($result['type'] === 'error') {
+                return back()->with('error', $result['message']);
+            }
 
-            $booking->update([
-                'status' => 'confirmed',
-            ]);
+            if ($result['type'] === 'info') {
+                return redirect()->route('booking.show', $booking->id)->with('info', $result['message']);
+            }
 
             return redirect()->route('booking.show', $booking->id)
-                ->with('success', 'Payment successful! Your booking is confirmed.');
+                ->with('success', $result['message']);
 
         } catch (\Exception $e) {
             \Log::error('Payment Processing Error', [
@@ -216,11 +338,18 @@ class BookingController extends Controller
                 'message' => $e->getMessage(),
             ]);
             return back()->with('error', 'Payment failed. Please try again.');
+        } finally {
+            optional($processingLock)->release();
         }
     }
 
     public function refund($id)
     {
+        $refundLock = Cache::lock("booking:{$id}:refund", 10);
+        if (!$refundLock->get()) {
+            return back()->with('info', 'Refund untuk booking ini sedang diproses. Silakan tunggu beberapa detik.');
+        }
+
         try {
             $booking = Booking::with(['payment', 'bookingFlights.flight', 'passengers.checkIn'])
                 ->where('user_id', Auth::id())
@@ -243,18 +372,36 @@ class BookingController extends Controller
                 return back()->with('info', 'Refund untuk booking ini sudah pernah diproses.');
             }
 
-            DB::transaction(function () use ($booking, $existingPaymentDetails) {
-                foreach ($booking->bookingFlights as $bookingFlight) {
-                    if ($bookingFlight->flight) {
-                        $bookingFlight->flight->increaseAvailableSeats(
-                            (int) ($bookingFlight->passenger_count ?? 1),
-                            $bookingFlight->travel_class_id
-                        );
+            DB::transaction(function () use ($booking) {
+                /** @var Booking $lockedBooking */
+                $lockedBooking = Booking::with(['payment', 'bookingFlights.flight'])
+                    ->where('id', $booking->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $paymentDetails = $lockedBooking->payment->payment_details ?? [];
+                $inventoryReserved = (bool) ($paymentDetails['inventory_reserved'] ?? false);
+                $inventoryReleased = (bool) ($paymentDetails['inventory_released'] ?? false);
+
+                if ($inventoryReserved && !$inventoryReleased) {
+                    foreach ($lockedBooking->bookingFlights as $bookingFlight) {
+                        $lockedFlight = Flight::where('id', $bookingFlight->flight_id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if ($lockedFlight) {
+                            $lockedFlight->increaseAvailableSeats(
+                                (int) ($bookingFlight->passenger_count ?? 1),
+                                $bookingFlight->travel_class_id
+                            );
+                        }
                     }
+
+                    $paymentDetails['inventory_released'] = true;
+                    $paymentDetails['inventory_released_at'] = now()->toDateTimeString();
                 }
 
-                $refundAmount = (float) round((float) $booking->total_amount * 0.9, 2);
-                $paymentDetails = $existingPaymentDetails;
+                $refundAmount = (float) round((float) $lockedBooking->total_amount * 0.9, 2);
                 $paymentDetails['refund'] = [
                     'requested_at' => now()->toDateTimeString(),
                     'amount' => $refundAmount,
@@ -263,13 +410,13 @@ class BookingController extends Controller
                     'reason' => 'user_requested',
                 ];
 
-                $booking->payment->update([
+                $lockedBooking->payment->update([
                     'status' => PaymentStatus::CANCELLED->value,
                     'payment_details' => $paymentDetails,
                     'notes' => 'Refund approved via self-service flow.',
                 ]);
 
-                $booking->update([
+                $lockedBooking->update([
                     'status' => BookingStatus::CANCELLED->value,
                     'expires_at' => now(),
                 ]);
@@ -286,25 +433,61 @@ class BookingController extends Controller
             ]);
 
             return back()->with('error', 'Refund gagal diproses. Silakan coba lagi.');
+        } finally {
+            optional($refundLock)->release();
         }
     }
 
     public function selectSeats($id)
     {
         if (Auth::check()) {
-            $booking = Booking::where('user_id', Auth::id())->findOrFail($id);
+            $booking = Booking::with('payment')->where('user_id', Auth::id())->findOrFail($id);
         } else {
             if (!in_array($id, session()->get('guest_booking_ids', []))) {
                 return redirect()->route('login')->with('info', 'Please login to select seats.');
             }
-            $booking = Booking::findOrFail($id);
+            $booking = Booking::with('payment')->findOrFail($id);
         }
+
+        if ($booking->expirePendingReservation()) {
+            return redirect()->route('booking.show', $booking->id)
+                ->with('info', 'Booking sudah kedaluwarsa. Silakan lakukan pemesanan baru.');
+        }
+
+        if ($booking->status === BookingStatus::CANCELLED->value) {
+            return redirect()->route('booking.show', $booking->id)
+                ->with('error', 'Booking sudah dibatalkan dan tidak bisa diubah kursinya.');
+        }
+
+        if ($booking->payment && $booking->payment->status === PaymentStatus::SUCCESS->value) {
+            return redirect()->route('booking.show', $booking->id)
+                ->with('info', 'Kursi tidak bisa diubah karena pembayaran sudah berhasil.');
+        }
+
         return view('bookings.seats', compact('booking'));
     }
 
     public function checkIn($id)
     {
-        $booking = Booking::where('user_id', Auth::id())->findOrFail($id);
+        $booking = Booking::with(['payment', 'bookingFlights.flight', 'passengers.seatAssignment'])
+            ->where('user_id', Auth::id())
+            ->findOrFail($id);
+
+        if ($booking->expirePendingReservation()) {
+            return redirect()->route('booking.show', $booking->id)
+                ->with('info', 'Booking sudah kedaluwarsa. Silakan lakukan pemesanan baru.');
+        }
+
+        if ($booking->passengers->contains(fn($passenger) => !$passenger->seatAssignment)) {
+            return redirect()->route('booking.seats', $booking->id)
+                ->with('error', 'Pilih kursi untuk semua penumpang sebelum check-in.');
+        }
+
+        if (!$booking->canCheckIn()) {
+            return redirect()->route('booking.show', $booking->id)
+                ->with('error', $booking->check_in_blocked_reason ?? 'Check-in belum tersedia untuk booking ini.');
+        }
+
         return view('bookings.checkin', compact('booking'));
     }
 

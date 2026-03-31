@@ -272,7 +272,7 @@ class Flight extends Model
                 ->where('travel_class_id', $travelClassId)
                 ->first();
 
-            if ($seatPrice && $seatPrice->available_seats >= $count) {
+            if ($seatPrice instanceof FlightSeatPrice && $seatPrice->available_seats >= $count) {
                 $seatPrice->decrement('available_seats', $count);
             }
         }
@@ -289,7 +289,7 @@ class Flight extends Model
                 ->where('travel_class_id', $travelClassId)
                 ->first();
 
-            if ($seatPrice) {
+            if ($seatPrice instanceof FlightSeatPrice) {
                 $seatPrice->increment('available_seats', $count);
             }
         }
@@ -303,7 +303,7 @@ class Flight extends Model
             return false;
         }
 
-        $hoursUntilDeparture = $this->departure_datetime->diffInHours(now());
+        $hoursUntilDeparture = now()->diffInHours($this->departure_datetime, false);
         
         // Check-in window: 24 hours to 3 hours before departure
         return $hoursUntilDeparture <= 24 && $hoursUntilDeparture >= 3;

@@ -15,6 +15,7 @@ class CheckInProcess extends Component
     public $passengers = [];
     public $selectedPassengers = [];
     public $canCheckIn = false;
+    public $checkInBlockedReason = null;
 
     public function mount($bookingId)
     {
@@ -22,17 +23,14 @@ class CheckInProcess extends Component
             'flights.schedule.originAirport',
             'flights.schedule.destinationAirport',
             'passengers.seatAssignment.seatMap',
-            'passengers.boardingPass'
+            'passengers.boardingPass',
+            'payment',
         ])->findOrFail($bookingId);
 
         $this->passengers = $this->booking->passengers;
 
-        // Check if check-in is available (24 hours before departure)
-        $flight = $this->booking->flights->first();
-        if ($flight) {
-            $hoursUntilDeparture = now()->diffInHours($flight->departure_datetime, false);
-            $this->canCheckIn = $hoursUntilDeparture <= 24 && $hoursUntilDeparture > 0;
-        }
+        $this->checkInBlockedReason = $this->booking->check_in_blocked_reason;
+        $this->canCheckIn = $this->checkInBlockedReason === null;
     }
 
     public function togglePassenger($passengerId)
@@ -52,7 +50,7 @@ class CheckInProcess extends Component
         }
 
         if (!$this->canCheckIn) {
-            session()->flash('error', 'Check-in is only available 24 hours before departure.');
+            session()->flash('error', $this->checkInBlockedReason ?? 'Check-in belum tersedia untuk booking ini.');
             return;
         }
 

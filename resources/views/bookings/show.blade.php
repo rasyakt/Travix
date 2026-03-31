@@ -6,10 +6,23 @@
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         @php
             $isPaid = $booking->payment && $booking->payment->status === 'success';
+            $currentFlowStep = 2;
+            if ($booking->passengers->contains(fn($passenger) => $passenger->seatAssignment)) {
+                $currentFlowStep = 3;
+            }
+            if ($booking->payment && in_array($booking->payment->status, ['pending', 'processing'])) {
+                $currentFlowStep = 4;
+            }
+            if ($isPaid && $booking->status === 'confirmed') {
+                $currentFlowStep = 5;
+            }
+
             $estimatedRefundAmount = (float) round((float) $booking->total_amount * 0.9, 0);
             $firstFlight = $booking->flights->first();
             $hoursUntilDeparture = $firstFlight ? now()->diffInHours($firstFlight->departure_datetime, false) : null;
             $hasCheckedInPassenger = $booking->passengers->contains(fn($passenger) => $passenger->checkIn);
+            $hasPassengerWithoutSeat = $booking->passengers->contains(fn($passenger) => !$passenger->seatAssignment);
+            $canShowCheckInAction = !$hasCheckedInPassenger && !$hasPassengerWithoutSeat && $booking->canCheckIn();
 
             $refundBlockedReason = null;
             if (!$isPaid) {
@@ -27,32 +40,16 @@
             }
         @endphp
 
-        @if (session()->has('success'))
-            <div class="mb-5 p-4 bg-green-50 border border-green-200 text-green-700 rounded-2xl flex items-center gap-3">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <p class="text-sm font-medium">{{ session('success') }}</p>
-            </div>
-        @endif
+        @include('bookings.partials.flow-steps', ['currentStep' => $currentFlowStep])
 
-        @if (session()->has('info'))
-            <div class="mb-5 p-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-2xl flex items-center gap-3">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p class="text-sm font-medium">{{ session('info') }}</p>
-            </div>
-        @endif
-
-        @if (session()->has('error'))
-            <div class="mb-5 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl flex items-center gap-3">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p class="text-sm font-medium">{{ session('error') }}</p>
+        @if($booking->status === 'pending' && $booking->expires_at)
+            <div class="mb-6">
+                @include('bookings.partials.payment-countdown', [
+                    'expiresAt' => $booking->expires_at,
+                    'refreshUrl' => route('booking.show', $booking->id),
+                    'title' => 'Booking ini masih menunggu pembayaran',
+                    'description' => 'Selesaikan pembayaran sebelum waktu habis agar booking tidak otomatis dibatalkan.',
+                ])
             </div>
         @endif
 
@@ -294,7 +291,7 @@
                     Pay Now
                 </a>
             @elseif($booking->status === 'confirmed')
-                @if(!$booking->passengers->first()->seatAssignment)
+                @if($hasPassengerWithoutSeat)
                     <a href="{{ route('booking.seats', $booking->id) }}" class="btn-tv-accent py-3.5 text-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -302,7 +299,7 @@
                         </svg>
                         Choose Seats
                     </a>
-                @elseif($booking->flights->first()->departure_datetime->diffInHours(now()) <= 24 && $booking->flights->first()->departure_datetime->isFuture())
+                @elseif($canShowCheckInAction)
                     <a href="{{ route('booking.checkin', $booking->id) }}" class="btn-tv-accent py-3.5 text-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

@@ -167,8 +167,8 @@ class BookingForm extends Component
                 session()->put('guest_booking_ids', array_values(array_unique([...$guestBookingIds, $booking->id])));
             }
 
-            session()->flash('success', 'Booking created successfully!');
-            return redirect()->route('booking.payment', $booking->id);
+            session()->flash('success', 'Booking berhasil dibuat. Lanjutkan ke pemilihan kursi.');
+            return redirect()->route('booking.seats', $booking->id);
 
         } catch (ValidationException $e) {
             if ($transactionStarted) {

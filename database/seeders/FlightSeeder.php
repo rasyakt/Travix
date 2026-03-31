@@ -31,7 +31,15 @@ class FlightSeeder extends Seeder
                 ->first()?->id;
 
             // Get total seats count for this aircraft
-            $totalSeats = SeatMap::where('aircraft_id', $schedule->aircraft_id)->count();
+            // Prefer airline-specific seat maps; fall back to generic (airline_id = null).
+            $totalSeats = SeatMap::where('aircraft_id', $schedule->aircraft_id)
+                ->where('airline_id', $schedule->airline_id)
+                ->count();
+            if ($totalSeats === 0) {
+                $totalSeats = SeatMap::where('aircraft_id', $schedule->aircraft_id)
+                    ->whereNull('airline_id')
+                    ->count();
+            }
             if ($totalSeats === 0) {
                 $totalSeats = $schedule->aircraft?->typical_seating_capacity ?? 180;
             }

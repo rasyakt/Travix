@@ -52,4 +52,9 @@ class Airline extends Model
     {
         return $this->hasMany(Schedule::class)->where('is_active', true);
     }
+
+    public function cabinProfiles(): HasMany
+    {
+        return $this->hasMany(AirlineCabinProfile::class);
+    }
 }

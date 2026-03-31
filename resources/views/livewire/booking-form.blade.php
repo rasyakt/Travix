@@ -178,7 +178,7 @@
                 <div>
                     <p class="text-xs font-medium text-tv-muted">Total Price</p>
                     <p class="text-[10px] text-[#a0aec0]">{{ $numberOfPassengers }}
-                        {{ Str::plural('passenger', $numberOfPassengers) }}
+                        {{ \Illuminate\Support\Str::plural('passenger', $numberOfPassengers) }}
                     </p>
                 </div>
                 <p class="text-3xl font-extrabold text-tv-accent">Rp {{ number_format($totalPrice, 0, ',', '.') }}</p>
@@ -213,15 +213,15 @@
             <a href="{{ route('flights.index') }}" class="btn-tv-ghost text-sm">Cancel</a>
             <button type="submit" class="btn-tv-accent py-3 px-8 text-sm">
                 @auth
-                    Continue to Payment
+                    Continue to Seat Selection
                 @else
-                    Continue to Payment
+                    Continue to Seat Selection
                 @endauth
             </button>
         </div>
         @guest
             <p class="text-right text-[11px] font-medium text-tv-muted">
-                Setelah langkah ini, Anda akan diminta login sebelum proses pembayaran final.
+                Setelah pilih kursi, Anda bisa lanjut ke pembayaran. Login tetap dibutuhkan untuk pembayaran final.
             </p>
         @endguest
     </form>

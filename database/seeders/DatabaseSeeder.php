@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             AirportSeeder::class,
             AircraftSeeder::class,
             TravelClassSeeder::class,
+            AirlineCabinProfileSeeder::class,
             SeatMapSeeder::class,
             ScheduleSeeder::class,
             FlightSeeder::class,

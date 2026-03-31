@@ -128,7 +128,7 @@
                         <div class="flex items-center gap-2 mt-4 pt-4 border-t border-tv-border">
                             <a href="{{ route('booking.show', $booking->id) }}" class="btn-tv-outline text-xs py-2 px-4">View
                                 Details</a>
-                            @if(!$booking->passengers->first()->checkIn && $flight->departure_datetime->diffInHours(now()) <= 24 && $flight->departure_datetime->isFuture())
+                            @if($booking->canCheckIn() && $booking->passengers->contains(fn($passenger) => !$passenger->checkIn && $passenger->seatAssignment))
                                 <a href="{{ route('booking.checkin', $booking->id) }}"
                                     class="btn-tv-accent text-xs py-2 px-4">Check-in Now</a>
                             @endif

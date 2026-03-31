@@ -4,11 +4,26 @@
 
 @section('content')
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        @include('bookings.partials.flow-steps', ['currentStep' => 4])
+
         <div class="mb-8">
             <h1 class="tv-section-title">Complete Payment</h1>
             <p class="tv-section-subtitle">Booking <span
                     class="font-mono font-bold text-tv-primary">{{ $booking->display_booking_code }}</span></p>
+
+            @if(config('payment.provider') === 'dummy')
+                <div class="mt-4 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm font-medium">
+                    Development Mode: pembayaran menggunakan transaksi dummy (simulasi), belum terhubung ke payment gateway eksternal.
+                </div>
+            @endif
         </div>
+
+        @include('bookings.partials.payment-countdown', [
+            'expiresAt' => $booking->expires_at,
+            'refreshUrl' => route('booking.payment', $booking->id),
+            'title' => 'Selesaikan pembayaran agar booking tidak hangus',
+            'description' => 'Dummy payment tetap mengikuti batas waktu reservasi. Jika habis, booking pending akan dibatalkan otomatis dan kursi dilepas kembali.',
+        ])
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {{-- Main Content --}}
