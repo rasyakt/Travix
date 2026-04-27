@@ -32,42 +32,86 @@
                 <div class="tv-card p-5">
                     <h2 class="font-bold text-tv-text mb-4">Booking Summary</h2>
 
-                    {{-- Flight --}}
+                    {{-- Flight Info --}}
                     <div class="pb-4 mb-4 border-b border-tv-border">
-                        <div class="flex items-center gap-3 mb-3">
-                            @if($booking->flight->schedule->airline->logo_url)
-                                <img src="{{ $booking->flight->schedule->airline->logo_url }}" alt=""
-                                    class="h-8 w-8 rounded-lg object-contain bg-gray-50 p-1">
-                            @endif
-                            <div>
-                                <p class="font-bold text-tv-text text-sm">{{ $booking->flight->flight_number }}</p>
-                                <p class="text-xs text-tv-muted">{{ $booking->flight->schedule->airline->name }}</p>
+                        @if(isset($isApiBooking) && $isApiBooking && $booking->payment && isset($booking->payment->payment_details['flight_data']))
+                            @php
+                                $flightData = $booking->payment->payment_details['flight_data'];
+                            @endphp
+                            {{-- API Flight --}}
+                            <div class="flex items-center gap-3 mb-3">
+                                @if(isset($flightData['airline_logo']))
+                                    <img src="{{ $flightData['airline_logo'] }}" alt="{{ $flightData['airline'] }}"
+                                        class="h-8 w-8 rounded-lg object-contain bg-gray-50 p-1">
+                                @else
+                                    <div class="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-tv-primary" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+                                        </svg>
+                                    </div>
+                                @endif
+                                <div>
+                                    <p class="font-bold text-tv-text text-sm">{{ $flightData['flight_number'] ?? 'N/A' }}</p>
+                                    <p class="text-xs text-tv-muted">{{ $flightData['airline'] ?? 'Unknown' }}</p>
+                                </div>
+                                <span class="ml-auto text-[8px] font-black text-tv-primary bg-blue-50 px-2 py-1 rounded uppercase">API Partner</span>
                             </div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-3 items-center">
-                            <div>
-                                <p class="text-lg font-extrabold text-tv-text">
-                                    {{ $booking->flight->schedule->originAirport->iata_code }}</p>
-                                <p class="text-[10px] text-[#a0aec0]">
-                                    {{ $booking->flight->departure_datetime->format('M d, H:i') }}</p>
+                            <div class="grid grid-cols-3 gap-3 items-center">
+                                <div>
+                                    <p class="text-lg font-extrabold text-tv-text">{{ $flightData['origin'] ?? '' }}</p>
+                                    <p class="text-[10px] text-[#a0aec0]">{{ $flightData['departure_time'] ?? '' }}</p>
+                                </div>
+                                <div class="flex items-center justify-center">
+                                    <div class="w-2 h-2 rounded-full border-2 border-tv-primary"></div>
+                                    <div class="h-px bg-tv-border flex-1"></div>
+                                    <svg class="w-3 h-3 text-tv-primary mx-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+                                    </svg>
+                                    <div class="h-px bg-tv-border flex-1"></div>
+                                    <div class="w-2 h-2 rounded-full border-2 border-tv-accent"></div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-lg font-extrabold text-tv-text">{{ $flightData['destination'] ?? '' }}</p>
+                                    <p class="text-[10px] text-[#a0aec0]">{{ $flightData['arrival_time'] ?? '' }}</p>
+                                </div>
                             </div>
-                            <div class="flex items-center justify-center">
-                                <div class="w-2 h-2 rounded-full border-2 border-tv-primary"></div>
-                                <div class="h-px bg-tv-border flex-1"></div>
-                                <svg class="w-3 h-3 text-tv-primary mx-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path
-                                        d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                                </svg>
-                                <div class="h-px bg-tv-border flex-1"></div>
-                                <div class="w-2 h-2 rounded-full border-2 border-tv-accent"></div>
+                        @elseif($booking->flights->isNotEmpty())
+                            {{-- Regular Database Flight --}}
+                            <div class="flex items-center gap-3 mb-3">
+                                @if($booking->flight->schedule->airline->logo_url)
+                                    <img src="{{ $booking->flight->schedule->airline->logo_url }}" alt=""
+                                        class="h-8 w-8 rounded-lg object-contain bg-gray-50 p-1">
+                                @endif
+                                <div>
+                                    <p class="font-bold text-tv-text text-sm">{{ $booking->flight->flight_number }}</p>
+                                    <p class="text-xs text-tv-muted">{{ $booking->flight->schedule->airline->name }}</p>
+                                </div>
                             </div>
-                            <div class="text-right">
-                                <p class="text-lg font-extrabold text-tv-text">
-                                    {{ $booking->flight->schedule->destinationAirport->iata_code }}</p>
-                                <p class="text-[10px] text-[#a0aec0]">
-                                    {{ $booking->flight->arrival_datetime->format('M d, H:i') }}</p>
+                            <div class="grid grid-cols-3 gap-3 items-center">
+                                <div>
+                                    <p class="text-lg font-extrabold text-tv-text">
+                                        {{ $booking->flight->schedule->originAirport->iata_code }}</p>
+                                    <p class="text-[10px] text-[#a0aec0]">
+                                        {{ $booking->flight->departure_datetime->format('M d, H:i') }}</p>
+                                </div>
+                                <div class="flex items-center justify-center">
+                                    <div class="w-2 h-2 rounded-full border-2 border-tv-primary"></div>
+                                    <div class="h-px bg-tv-border flex-1"></div>
+                                    <svg class="w-3 h-3 text-tv-primary mx-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 1 0 001.17-1.408l-7-14z" />
+                                    </svg>
+                                    <div class="h-px bg-tv-border flex-1"></div>
+                                    <div class="w-2 h-2 rounded-full border-2 border-tv-accent"></div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-lg font-extrabold text-tv-text">
+                                        {{ $booking->flight->schedule->destinationAirport->iata_code }}</p>
+                                    <p class="text-[10px] text-[#a0aec0]">
+                                        {{ $booking->flight->arrival_datetime->format('M d, H:i') }}</p>
+                                </div>
                             </div>
-                        </div>
+                        @endif
                     </div>
 
                     {{-- Passengers --}}
@@ -81,14 +125,25 @@
                                         <p class="text-sm font-bold text-tv-text">{{ $passenger->first_name }}
                                             {{ $passenger->last_name }}</p>
                                         <p class="text-[10px] text-tv-muted">
-                                            {{ $passenger->travelClass->name ?? 'Economy' }} ·
-                                            Seat: @if($passenger->seatAssignment)
-                                            {{ $passenger->seatAssignment->seatMap->seat_number }} @else <span
-                                            class="text-amber-500">—</span> @endif
+                                            @if(isset($isApiBooking) && $isApiBooking)
+                                                {{ $booking->payment->payment_details['search_params']['seat_class'] ?? 'Economy' }}
+                                            @else
+                                                {{ $passenger->travelClass->name ?? 'Economy' }}
+                                            @endif
+                                            @if(!isset($isApiBooking) || !$isApiBooking)
+                                                · Seat: @if($passenger->seatAssignment)
+                                                {{ $passenger->seatAssignment->seatMap->seat_number }} @else <span
+                                                class="text-amber-500">—</span> @endif
+                                            @endif
                                         </p>
                                     </div>
                                     <span class="text-sm font-bold text-tv-text">Rp
-                                        {{ number_format($passenger->ticket_price, 0, ',', '.') }}</span>
+                                        @if(isset($isApiBooking) && $isApiBooking && isset($booking->payment->payment_details['flight_data']['price']))
+                                            {{ number_format($booking->payment->payment_details['flight_data']['price'], 0, ',', '.') }}
+                                        @else
+                                            {{ number_format($passenger->ticket_price, 0, ',', '.') }}
+                                        @endif
+                                    </span>
                                 </div>
                             @endforeach
                         </div>

@@ -23,7 +23,25 @@ class BookingController extends Controller
     {
         $flightId = (int) request('flight');
         $passengers = max(1, (int) request('passengers', 1));
+        $isApiFlightBooking = request()->has('api_flight') && request('api_flight');
 
+        // Handle API flight booking
+        if ($isApiFlightBooking) {
+            $apiFlightData = session('api_flight_booking');
+            
+            if (!$apiFlightData) {
+                return redirect()->route('flights.index')
+                    ->with('error', 'Data penerbangan API tidak ditemukan. Silakan cari ulang.');
+            }
+
+            return view('bookings.create-api', [
+                'flightData' => $apiFlightData['flight_data'],
+                'searchParams' => $apiFlightData['search_params'],
+                'passengers' => $apiFlightData['passenger_count']
+            ]);
+        }
+
+        // Handle regular database flight booking
         if ($flightId <= 0) {
             return redirect()->route('flights.index')
                 ->with('error', 'Penerbangan tidak valid. Silakan pilih penerbangan yang tersedia.');
@@ -148,12 +166,18 @@ class BookingController extends Controller
                 ->with('info', 'Booking otomatis dibatalkan karena batas waktu pembayaran telah habis. Kursi yang dipilih sudah dilepas kembali.');
         }
 
-        return view('bookings.show', compact('booking'));
+        // Check if this is an API booking
+        $isApiBooking = $booking->flights->isEmpty() && 
+                        $booking->payment && 
+                        isset($booking->payment->payment_details['source']) && 
+                        $booking->payment->payment_details['source'] === 'api_partner';
+
+        return view('bookings.show', compact('booking', 'isApiBooking'));
     }
 
     public function payment($id)
     {
-        $query = Booking::with(['flights', 'payment']);
+        $query = Booking::with(['flights', 'payment', 'passengers']);
 
         if (Auth::check()) {
             $booking = $query->where('user_id', Auth::id())->findOrFail($id);
@@ -169,16 +193,25 @@ class BookingController extends Controller
                 ->with('info', 'Booking sudah kedaluwarsa. Silakan lakukan pemesanan baru.');
         }
 
-        $booking->loadMissing('passengers.seatAssignment');
-
         if ($booking->status === BookingStatus::CANCELLED->value) {
             return redirect()->route('booking.show', $booking->id)
                 ->with('error', 'Booking sudah dibatalkan dan tidak dapat diproses pembayarannya.');
         }
 
-        if ($booking->passengers->contains(fn($passenger) => !$passenger->seatAssignment)) {
-            return redirect()->route('booking.seats', $booking->id)
-                ->with('error', 'Pilih kursi untuk semua penumpang sebelum pembayaran.');
+        // Check if this is an API booking (no flights relation)
+        $isApiBooking = $booking->flights->isEmpty() && 
+                        $booking->payment && 
+                        isset($booking->payment->payment_details['source']) && 
+                        $booking->payment->payment_details['source'] === 'api_partner';
+
+        // For API bookings, skip seat assignment check
+        if (!$isApiBooking) {
+            $booking->loadMissing('passengers.seatAssignment');
+            
+            if ($booking->passengers->contains(fn($passenger) => !$passenger->seatAssignment)) {
+                return redirect()->route('booking.seats', $booking->id)
+                    ->with('error', 'Pilih kursi untuk semua penumpang sebelum pembayaran.');
+            }
         }
 
         if ($booking->payment && $booking->payment->status === PaymentStatus::SUCCESS->value) {
@@ -186,7 +219,7 @@ class BookingController extends Controller
                 ->with('info', 'Pembayaran booking ini sudah berhasil diproses.');
         }
 
-        return view('bookings.payment', compact('booking'));
+        return view('bookings.payment', compact('booking', 'isApiBooking'));
     }
 
     public function processPayment(Request $request, $id)
@@ -242,7 +275,14 @@ class BookingController extends Controller
                     return ['type' => 'error', 'message' => 'Booking sudah selesai dan tidak memerlukan pembayaran lagi.'];
                 }
 
-                if ($lockedBooking->passengers->contains(fn($passenger) => !$passenger->seatAssignment)) {
+                // Check if this is an API booking
+                $isApiBooking = $lockedBooking->bookingFlights->isEmpty() && 
+                                $lockedBooking->payment && 
+                                isset($lockedBooking->payment->payment_details['source']) && 
+                                $lockedBooking->payment->payment_details['source'] === 'api_partner';
+
+                // For regular bookings, check seat assignments
+                if (!$isApiBooking && $lockedBooking->passengers->contains(fn($passenger) => !$passenger->seatAssignment)) {
                     return [
                         'type' => 'redirect-seats',
                         'message' => 'Pilih kursi untuk semua penumpang sebelum pembayaran.',
@@ -276,7 +316,10 @@ class BookingController extends Controller
                 $paymentDetails = $lockedBooking->payment->payment_details ?? [];
                 $inventoryReserved = (bool) ($paymentDetails['inventory_reserved'] ?? false);
 
-                if (!$inventoryReserved) {
+                // Only reserve inventory for regular bookings (not API bookings)
+                $isApiBooking = isset($paymentDetails['source']) && $paymentDetails['source'] === 'api_partner';
+
+                if (!$inventoryReserved && !$isApiBooking) {
                     foreach ($lockedBooking->bookingFlights as $bookingFlight) {
                         $lockedFlight = Flight::where('id', $bookingFlight->flight_id)
                             ->lockForUpdate()
@@ -289,6 +332,11 @@ class BookingController extends Controller
 
                     $paymentDetails['inventory_reserved'] = true;
                     $paymentDetails['inventory_reserved_at'] = now()->toDateTimeString();
+                } elseif ($isApiBooking && !$inventoryReserved) {
+                    // For API bookings, mark as reserved without actual inventory changes
+                    $paymentDetails['inventory_reserved'] = true;
+                    $paymentDetails['inventory_reserved_at'] = now()->toDateTimeString();
+                    $paymentDetails['api_booking_note'] = 'API booking - no local inventory management';
                 }
 
                 $paymentDetails['provider'] = 'dummy';
@@ -462,6 +510,18 @@ class BookingController extends Controller
         if ($booking->payment && $booking->payment->status === PaymentStatus::SUCCESS->value) {
             return redirect()->route('booking.show', $booking->id)
                 ->with('info', 'Kursi tidak bisa diubah karena pembayaran sudah berhasil.');
+        }
+
+        // Check if this is an API booking
+        $isApiBooking = $booking->bookingFlights()->count() === 0 && 
+                        $booking->payment && 
+                        isset($booking->payment->payment_details['source']) && 
+                        $booking->payment->payment_details['source'] === 'api_partner';
+
+        if ($isApiBooking) {
+            // API bookings don't have seat selection - redirect to payment
+            return redirect()->route('booking.payment', $booking->id)
+                ->with('info', 'Pemilihan kursi untuk penerbangan partner akan dilakukan oleh maskapai. Silakan lanjutkan ke pembayaran.');
         }
 
         return view('bookings.seats', compact('booking'));

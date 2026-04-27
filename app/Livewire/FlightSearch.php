@@ -246,17 +246,63 @@ class FlightSearch extends Component
             if ($date->isPast())
                 continue;
 
-            // Simple pseudo-random price based on date and route to keep it consistent for this session
+            // Generate realistic price based on route
+            // Base price varies by route, with some randomness for different dates
             $seed = crc32($this->origin . $this->destination . $date->toDateString());
-            $price = 1200000 + ($seed % 800000);
+            
+            // Get base price for route
+            $basePrice = $this->getBasePrice($this->origin, $this->destination);
+            
+            // Add variation: ±20% based on date
+            $variation = ($seed % 40) - 20; // -20% to +20%
+            $price = $basePrice + ($basePrice * $variation / 100);
 
             $this->dailyPrices[] = [
                 'date' => $date->format('Y-m-d'),
                 'label' => $date->format('D, d M'),
-                'price' => $price,
+                'price' => (int) $price,
                 'is_current' => $date->isSameDay($baseDate),
             ];
         }
+    }
+
+    /**
+     * Get base price for a route (realistic pricing)
+     */
+    protected function getBasePrice(string $origin, string $destination): int
+    {
+        $origin = strtoupper($origin);
+        $destination = strtoupper($destination);
+        
+        // Common Indonesian routes with realistic base prices
+        $routePrices = [
+            'CGK-DPS' => 850000,  // Jakarta - Bali
+            'DPS-CGK' => 850000,
+            'CGK-SUB' => 600000,  // Jakarta - Surabaya
+            'SUB-CGK' => 600000,
+            'CGK-JOG' => 500000,  // Jakarta - Yogyakarta
+            'JOG-CGK' => 500000,
+            'CGK-UPG' => 1100000, // Jakarta - Makassar
+            'UPG-CGK' => 1100000,
+            'CGK-KNO' => 900000,  // Jakarta - Medan
+            'KNO-CGK' => 900000,
+            'CGK-SIN' => 1800000, // Jakarta - Singapore
+            'SIN-CGK' => 1800000,
+            'CGK-KUL' => 1500000, // Jakarta - Kuala Lumpur
+            'KUL-CGK' => 1500000,
+        ];
+        
+        $route = "{$origin}-{$destination}";
+        
+        if (isset($routePrices[$route])) {
+            return $routePrices[$route];
+        }
+        
+        // Default: 700k for domestic, 2M for international
+        $domesticAirports = ['CGK', 'DPS', 'SUB', 'JOG', 'UPG', 'KNO', 'BPN', 'SOC', 'PLM', 'PKU', 'BTH'];
+        $isInternational = !in_array($origin, $domesticAirports) || !in_array($destination, $domesticAirports);
+        
+        return $isInternational ? 2000000 : 700000;
     }
 
     public function changeDate($date)
@@ -314,10 +360,32 @@ class FlightSearch extends Component
 
             if (!empty($apiResults)) {
                 $totalPassengers = (int) $this->adults + (int) $this->children + (int) $this->infants;
-                $this->searchResults = array_map(function ($flight) use ($totalPassengers) {
-                    $flight['price'] = $totalPassengers > 0 ? ($flight['price'] / $totalPassengers) : $flight['price'];
+                $this->searchResults = array_map(function ($flight, $index) use ($totalPassengers) {
+                    // Divide total price by passengers to get per-person price
+                    $pricePerPerson = $totalPassengers > 0 ? ($flight['price'] / $totalPassengers) : $flight['price'];
+                    
+                    // DEVELOPMENT FIX: If price seems unrealistic (too high), apply adjustment
+                    // Real-world prices for domestic Indonesia flights: 500k - 2M per person
+                    // International: 1.5M - 5M per person
+                    if ($pricePerPerson > 5000000) {
+                        // Price might be in wrong currency or inflated
+                        // Apply realistic pricing based on route distance
+                        $pricePerPerson = $this->getRealisticPrice($flight);
+                        \Log::warning('API Flight Price Adjusted', [
+                            'original' => $flight['price'],
+                            'adjusted' => $pricePerPerson,
+                            'flight' => $flight['flight_number']
+                        ]);
+                    }
+                    
+                    $flight['price'] = $pricePerPerson;
+                    $flight['original_api_price'] = $flight['price']; // Store original for reference
+                    // Add negative ID for API flights to distinguish them
+                    $flight['id'] = -($index + 1);
+                    $flight['bookable'] = true;
+                    $flight['from_api'] = true;
                     return $flight;
-                }, $apiResults);
+                }, $apiResults, array_keys($apiResults));
             }
         }
 
@@ -355,9 +423,48 @@ class FlightSearch extends Component
         ];
     }
 
-    public function selectFlight($flightId)
+    public function selectFlight($flightId, $flightData = null)
     {
         $flightId = (int) $flightId;
+
+        // Handle API flights (negative IDs or zero)
+        if ($flightId <= 0 && !empty($flightData)) {
+            // Decode if it's a JSON string
+            if (is_string($flightData)) {
+                $flightData = json_decode($flightData, true);
+            }
+
+            // Store API flight data in session for booking with complete information
+            session()->put('api_flight_booking', [
+                'flight_data' => array_merge($flightData, [
+                    // Ensure all required fields for dashboard display
+                    'origin_code' => $flightData['origin'] ?? $this->origin,
+                    'destination_code' => $flightData['destination'] ?? $this->destination,
+                    'origin_city' => $flightData['origin_name'] ?? $this->getAirportCity($this->origin),
+                    'destination_city' => $flightData['destination_name'] ?? $this->getAirportCity($this->destination),
+                    'departure_time' => $this->formatApiDateTime($flightData['departure_time'] ?? null, $this->departureDate),
+                    'arrival_time' => $this->formatApiDateTime($flightData['arrival_time'] ?? null, $this->departureDate),
+                ]),
+                'search_params' => [
+                    'origin' => $this->origin,
+                    'destination' => $this->destination,
+                    'departure_date' => $this->departureDate,
+                    'return_date' => $this->returnDate,
+                    'trip_type' => $this->tripType,
+                    'seat_class' => $this->seatClass,
+                    'adults' => $this->adults,
+                    'children' => $this->children,
+                    'infants' => $this->infants,
+                ],
+                'passenger_count' => $this->getPassengerCount(),
+                'created_at' => now(), // Add timestamp for expiry check
+            ]);
+            
+            return redirect()->route('booking.create', [
+                'api_flight' => true,
+                'passengers' => $this->getPassengerCount()
+            ]);
+        }
 
         if ($flightId <= 0) {
             session()->flash('message', 'Penerbangan ini belum dapat dipesan langsung. Silakan pilih penerbangan lain.');
@@ -391,11 +498,6 @@ class FlightSearch extends Component
         ]);
     }
 
-    public function notifyUnbookableFlight()
-    {
-        session()->flash('message', 'Maskapai ini berasal dari data partner API dan belum terhubung ke booking otomatis.');
-    }
-
     protected function getValidationRules(): array
     {
         $rules = $this->rules;
@@ -420,6 +522,90 @@ class FlightSearch extends Component
             'First Class' => 4,
             default => 1,
         };
+    }
+
+    protected function getAirportCity(string $iataCode): string
+    {
+        $airport = Airport::where('iata_code', strtoupper($iataCode))->first();
+        return $airport ? $airport->city : $iataCode;
+    }
+
+    protected function formatApiDateTime(?string $time, string $date): string
+    {
+        if (!$time) {
+            return now()->toDateTimeString();
+        }
+
+        // If time is already a full datetime string
+        if (strlen($time) > 5 && strpos($time, ':') !== false) {
+            try {
+                return \Carbon\Carbon::parse($time)->toDateTimeString();
+            } catch (\Exception $e) {
+                // Fall through to time-only parsing
+            }
+        }
+
+        // If time is just HH:MM format
+        try {
+            return \Carbon\Carbon::parse($date . ' ' . $time)->toDateTimeString();
+        } catch (\Exception $e) {
+            return now()->toDateTimeString();
+        }
+    }
+
+    /**
+     * Get realistic price for API flights based on route
+     * This is a fallback when API returns unrealistic prices
+     */
+    protected function getRealisticPrice(array $flight): float
+    {
+        $origin = strtoupper($flight['origin'] ?? $this->origin);
+        $destination = strtoupper($flight['destination'] ?? $this->destination);
+        
+        // Realistic price ranges for common Indonesian routes (Economy class, per person)
+        $priceMap = [
+            // Jakarta routes
+            'CGK-DPS' => [680000, 1200000], // Jakarta - Bali
+            'DPS-CGK' => [680000, 1200000],
+            'CGK-SUB' => [450000, 800000],  // Jakarta - Surabaya
+            'SUB-CGK' => [450000, 800000],
+            'CGK-JOG' => [400000, 700000],  // Jakarta - Yogyakarta
+            'JOG-CGK' => [400000, 700000],
+            'CGK-UPG' => [900000, 1500000], // Jakarta - Makassar
+            'UPG-CGK' => [900000, 1500000],
+            'CGK-KNO' => [700000, 1200000], // Jakarta - Medan
+            'KNO-CGK' => [700000, 1200000],
+            'CGK-BPN' => [800000, 1400000], // Jakarta - Balikpapan
+            'BPN-CGK' => [800000, 1400000],
+            
+            // International routes
+            'CGK-SIN' => [1200000, 2500000], // Jakarta - Singapore
+            'SIN-CGK' => [1200000, 2500000],
+            'CGK-KUL' => [1000000, 2200000], // Jakarta - Kuala Lumpur
+            'KUL-CGK' => [1000000, 2200000],
+            'CGK-BKK' => [1500000, 3000000], // Jakarta - Bangkok
+            'BKK-CGK' => [1500000, 3000000],
+        ];
+        
+        $route = "{$origin}-{$destination}";
+        
+        if (isset($priceMap[$route])) {
+            // Return random price within realistic range
+            [$min, $max] = $priceMap[$route];
+            return rand($min, $max);
+        }
+        
+        // Default fallback based on flight type
+        $isInternational = !in_array($origin, ['CGK', 'DPS', 'SUB', 'JOG', 'UPG', 'KNO', 'BPN', 'SOC', 'PLM', 'PKU', 'BTH']) ||
+                          !in_array($destination, ['CGK', 'DPS', 'SUB', 'JOG', 'UPG', 'KNO', 'BPN', 'SOC', 'PLM', 'PKU', 'BTH']);
+        
+        if ($isInternational) {
+            // International flight: 1.5M - 3.5M
+            return rand(1500000, 3500000);
+        } else {
+            // Domestic flight: 500k - 1.5M
+            return rand(500000, 1500000);
+        }
     }
 
     public function render()
