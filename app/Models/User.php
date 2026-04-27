@@ -56,4 +56,21 @@ class User extends Authenticatable
     {
         return $this->hasMany(Booking::class)->where('status', 'completed');
     }
+
+    // Accessors
+    public function getAvatarUrlAttribute()
+    {
+        if ($this->avatar) {
+            // Check if avatar is already a full URL (from Google OAuth)
+            if (filter_var($this->avatar, FILTER_VALIDATE_URL)) {
+                return $this->avatar;
+            }
+            
+            // Otherwise, it's a local file path
+            return asset('storage/' . $this->avatar);
+        }
+        
+        // Fallback to UI Avatars
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=7F9CF5&background=EBF4FF&size=200';
+    }
 }
