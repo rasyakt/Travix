@@ -289,6 +289,35 @@ class Booking extends Model
         $paymentDetails['expired_at'] = now()->toDateTimeString();
         $paymentDetails['expired_reason'] = 'payment_window_elapsed';
 
+        // FIX: Release seats back to inventory before deleting assignments
+        $seatAssignments = $this->seatAssignments()->with('seatMap')->get();
+        
+        if ($seatAssignments->isNotEmpty()) {
+            $flight = $this->flights->first();
+            
+            if ($flight) {
+                // Group by travel class to update FlightSeatPrice
+                $seatsByClass = $seatAssignments->groupBy(function($assignment) {
+                    return $assignment->seatMap->travel_class_id;
+                });
+                
+                foreach ($seatsByClass as $travelClassId => $seats) {
+                    $count = $seats->count();
+                    
+                    // Restore FlightSeatPrice.available_seats
+                    FlightSeatPrice::where('flight_id', $flight->id)
+                        ->where('travel_class_id', $travelClassId)
+                        ->increment('available_seats', $count);
+                }
+                
+                // Restore Flight.available_seats
+                $flight->increment('available_seats', $seatAssignments->count());
+                
+                $paymentDetails['seats_released'] = $seatAssignments->count();
+                $paymentDetails['seats_released_at'] = now()->toDateTimeString();
+            }
+        }
+
         $this->seatAssignments()->delete();
 
         if ($this->payment && in_array($this->payment->status, ['pending', 'processing', 'failed'], true)) {

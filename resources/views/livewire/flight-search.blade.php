@@ -489,13 +489,28 @@
                                                 <p class="text-[10px] text-tv-muted font-bold">/orang</p>
                                             </div>
                                         @endif
-                                        @if(!empty($result['bookable']) && !empty($result['id']))
-                                            <button wire:click="selectFlight({{ $result['id'] }})"
-                                                class="btn-tv-primary text-[11px] py-2.5 px-6 font-black ml-auto md:ml-0 shadow-lg">PILIH</button>
+                                        @if(!empty($result['bookable']))
+                                            @if(!empty($result['id']) && $result['id'] > 0)
+                                                {{-- Database Flight --}}
+                                                <button wire:click="selectFlight({{ $result['id'] }})"
+                                                    class="btn-tv-primary text-[11px] py-2.5 px-6 font-black ml-auto md:ml-0 shadow-lg">PILIH</button>
+                                            @elseif(!empty($result['from_api']))
+                                                {{-- API Flight --}}
+                                                <button wire:click="selectFlight({{ $result['id'] ?? 0 }}, '{{ json_encode($result) }}')"
+                                                    class="btn-tv-primary text-[11px] py-2.5 px-6 font-black ml-auto md:ml-0 shadow-lg relative group">
+                                                    PILIH
+                                                    <span class="absolute -top-1 -right-1 bg-tv-accent text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">API</span>
+                                                </button>
+                                            @else
+                                                <button type="button" disabled
+                                                    class="bg-gray-100 text-tv-muted border border-tv-border text-[11px] py-2.5 px-4 rounded-lg font-black ml-auto md:ml-0 cursor-not-allowed">
+                                                    TIDAK TERSEDIA
+                                                </button>
+                                            @endif
                                         @else
-                                            <button type="button" wire:click="notifyUnbookableFlight"
-                                                class="bg-gray-100 text-tv-muted border border-tv-border text-[11px] py-2.5 px-4 rounded-lg font-black ml-auto md:ml-0">
-                                                PARTNER API
+                                            <button type="button" disabled
+                                                class="bg-gray-100 text-tv-muted border border-tv-border text-[11px] py-2.5 px-4 rounded-lg font-black ml-auto md:ml-0 cursor-not-allowed">
+                                                TIDAK TERSEDIA
                                             </button>
                                         @endif
                                     </div>

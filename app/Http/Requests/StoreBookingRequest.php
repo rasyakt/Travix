@@ -42,4 +42,44 @@ class StoreBookingRequest extends FormRequest
             'passengers.*.travel_class_id.required' => 'Travel class is required',
         ];
     }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $passengers = $this->input('passengers', []);
+            
+            // Validate passenger count
+            if (count($passengers) < 1 || count($passengers) > 9) {
+                $validator->errors()->add('passengers', 'Jumlah penumpang harus antara 1-9 orang.');
+            }
+            
+            // FIX: Check for duplicate passenger names + DOB
+            $passengerKeys = [];
+            foreach ($passengers as $index => $passenger) {
+                $firstName = strtolower(trim($passenger['first_name'] ?? ''));
+                $lastName = strtolower(trim($passenger['last_name'] ?? ''));
+                $dob = $passenger['date_of_birth'] ?? '';
+                
+                $key = $firstName . '|' . $lastName . '|' . $dob;
+                
+                if (in_array($key, $passengerKeys)) {
+                    $validator->errors()->add(
+                        "passengers.{$index}", 
+                        "Penumpang dengan nama dan tanggal lahir yang sama sudah ada dalam booking ini."
+                    );
+                }
+                
+                $passengerKeys[] = $key;
+            }
+            
+            // Validate all passengers have same travel class
+            $travelClasses = array_unique(array_column($passengers, 'travel_class_id'));
+            if (count($travelClasses) > 1) {
+                $validator->errors()->add('passengers', 'Semua penumpang harus memilih kelas perjalanan yang sama untuk saat ini.');
+            }
+        });
+    }
 }

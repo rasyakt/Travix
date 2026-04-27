@@ -18,10 +18,10 @@
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 @foreach([
-                    ['from' => 'CGK', 'to' => 'DPS', 'label' => 'Jakarta → Bali'],
+                    ['from' => 'CGK', 'to' => 'DPS', 'label' => 'Jakarta → Denpasar'],
                     ['from' => 'CGK', 'to' => 'SIN', 'label' => 'Jakarta → Singapore'],
                     ['from' => 'SUB', 'to' => 'CGK', 'label' => 'Surabaya → Jakarta'],
-                    ['from' => 'DPS', 'to' => 'SIN', 'label' => 'Bali → Singapore'],
+                    ['from' => 'DPS', 'to' => 'SIN', 'label' => 'Denpasar → Singapore'],
                 ] as $route)
                 <button onclick="fillRoute('{{ $route['from'] }}', '{{ $route['to'] }}')"
                     class="tv-card-interactive p-4 text-left group">

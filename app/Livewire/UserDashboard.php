@@ -43,14 +43,45 @@ class UserDashboard extends Component
 
         // Separate upcoming and past flights
         $this->upcomingFlights = $allBookings->filter(function ($booking) {
-            $flight = $booking->flights->first();
-            return $flight && $flight->departure_datetime->isFuture();
+            $departureDate = $this->getBookingDepartureDate($booking);
+            return $departureDate && $departureDate->isFuture();
         })->values();
 
         $this->pastFlights = $allBookings->filter(function ($booking) {
-            $flight = $booking->flights->first();
-            return $flight && $flight->departure_datetime->isPast();
+            $departureDate = $this->getBookingDepartureDate($booking);
+            return $departureDate && $departureDate->isPast();
         })->values();
+    }
+
+    /**
+     * Get departure date for both database and API bookings
+     */
+    protected function getBookingDepartureDate($booking)
+    {
+        // Check if it's a database flight booking
+        $flight = $booking->flights->first();
+        if ($flight) {
+            return $flight->departure_datetime;
+        }
+
+        // Check if it's an API booking
+        if ($booking->payment && isset($booking->payment->payment_details['flight_data'])) {
+            $flightData = $booking->payment->payment_details['flight_data'];
+            $departureTime = $flightData['departure_time'] ?? null;
+            
+            if ($departureTime) {
+                try {
+                    return \Carbon\Carbon::parse($departureTime);
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to parse API flight departure time', [
+                        'booking_id' => $booking->id,
+                        'departure_time' => $departureTime
+                    ]);
+                }
+            }
+        }
+
+        return null;
     }
 
     public function cancelBooking($bookingId)

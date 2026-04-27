@@ -42,13 +42,17 @@ class FlightSeatPriceSeeder extends Seeder
                     $basePrice = $flight->schedule?->base_price ?? 500000;
                     $price = $basePrice * $travelClass->price_multiplier;
 
-                    FlightSeatPrice::create([
-                        'flight_id' => $flight->id,
-                        'travel_class_id' => $travelClass->id,
-                        'price' => $price,
-                        'available_seats' => $seatCount,
-                        'total_seats' => $seatCount,
-                    ]);
+                    FlightSeatPrice::updateOrCreate(
+                        [
+                            'flight_id' => $flight->id,
+                            'travel_class_id' => $travelClass->id,
+                        ],
+                        [
+                            'price' => $price,
+                            'available_seats' => $seatCount,
+                            'total_seats' => $seatCount,
+                        ]
+                    );
                 }
             }
         }
