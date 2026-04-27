@@ -9,6 +9,7 @@ use App\Http\Controllers\FlightController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PaymentWebhookController;
+use App\Http\Controllers\ProfileController;
 
 // Home
 Route::get('/', function () {
@@ -44,6 +45,12 @@ Route::get('/booking/{id}/seats', [BookingController::class, 'selectSeats'])->na
 Route::middleware('auth')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Profile Routes
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
 
     // Authenticated Booking Actions
     Route::delete('/booking/{id}', [BookingController::class, 'cancel'])->name('booking.cancel');

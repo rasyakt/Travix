@@ -48,21 +48,56 @@
                                 <p class="text-[10px] font-black text-tv-muted uppercase tracking-widest mb-0.5">Welcome</p>
                                 <p class="text-xs font-black text-tv-secondary">{{ Auth::user()->name }}</p>
                             </div>
-                            <a href="{{ route('dashboard') }}" class="relative group">
-                                <img src="{{ Auth::user()->avatar ?? 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name) . '&color=7F9CF5&background=EBF4FF' }}"
-                                    alt="Avatar"
-                                    class="w-10 h-10 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-tv-primary/20 transition-all">
-                                <div
-                                    class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full">
+                            
+                            {{-- Profile Dropdown --}}
+                            <div class="relative group">
+                                <button class="relative">
+                                    <img src="{{ Auth::user()->avatar_url }}"
+                                        alt="{{ Auth::user()->name }}"
+                                        class="w-10 h-10 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-tv-primary/20 transition-all">
+                                    <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></div>
+                                </button>
+                                
+                                {{-- Dropdown Menu --}}
+                                <div class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-tv-border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                    <div class="p-3 border-b border-tv-border">
+                                        <p class="text-sm font-bold text-tv-text truncate">{{ Auth::user()->name }}</p>
+                                        <p class="text-xs text-tv-muted truncate">{{ Auth::user()->email }}</p>
+                                    </div>
+                                    <div class="py-2">
+                                        <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-tv-text hover:bg-tv-bg transition-colors">
+                                            <svg class="w-4 h-4 text-tv-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                            </svg>
+                                            <span class="font-medium">Dashboard</span>
+                                        </a>
+                                        <a href="{{ route('profile.show') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-tv-text hover:bg-tv-bg transition-colors">
+                                            <svg class="w-4 h-4 text-tv-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                            </svg>
+                                            <span class="font-medium">My Profile</span>
+                                        </a>
+                                        <a href="{{ route('flights.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-tv-text hover:bg-tv-bg transition-colors">
+                                            <svg class="w-4 h-4 text-tv-primary" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+                                            </svg>
+                                            <span class="font-medium">Book Flight</span>
+                                        </a>
+                                    </div>
+                                    <div class="border-t border-tv-border p-2">
+                                        <form method="POST" action="{{ route('logout') }}" class="m-0">
+                                            @csrf
+                                            <button type="submit" class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left rounded-lg">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                                </svg>
+                                                <span class="font-medium">Sign Out</span>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
-                            </a>
+                            </div>
                         </div>
-                        <form method="POST" action="{{ route('logout') }}" class="m-0">
-                            @csrf
-                            <button type="submit"
-                                class="text-xs font-black uppercase text-tv-muted hover:text-red-500 transition-colors">Sign
-                                Out</button>
-                        </form>
                     @else
                         <a href="{{ route('login') }}"
                             class="text-xs font-black uppercase text-tv-muted hover:text-tv-primary transition-all">Sign
