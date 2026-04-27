@@ -60,6 +60,9 @@ class SeatAssignmentService
                 throw new RuntimeException('Satu atau lebih kursi baru saja diambil pengguna lain.');
             }
 
+            // FIX: Calculate total seat extra fees
+            $totalSeatExtraFee = 0;
+
             foreach ($selectedSeatIds as $index => $seatId) {
                 $passengerId = $passengerIds[$index] ?? null;
                 $seat = $seatMapById->get($seatId);
@@ -67,6 +70,10 @@ class SeatAssignmentService
                 if (!$passengerId || !$seat || !$seat->is_available) {
                     throw new RuntimeException('Pilihan kursi tidak valid.');
                 }
+
+                // FIX: Add extra fee to total
+                $extraFee = (float) ($seat->extra_price ?? 0);
+                $totalSeatExtraFee += $extraFee;
 
                 SeatAssignment::updateOrCreate(
                     [
@@ -76,6 +83,7 @@ class SeatAssignmentService
                     [
                         'seat_map_id' => $seat->id,
                         'seat_number' => $seat->seat_number,
+                        'extra_fee' => $extraFee, // FIX: Store extra fee
                         'assigned_at' => now(),
                     ]
                 );
@@ -88,6 +96,9 @@ class SeatAssignmentService
 
             $pricePerPassenger = $selectedClassPrice?->price ?? 0;
             $newTotal = (float) $pricePerPassenger * count($passengerIds);
+            
+            // FIX: Add taxes and seat fees to total
+            $taxesFees = $newTotal * 0.10; // 10% tax
 
             $bookingFlight = $lockedBooking->bookingFlights->first();
             if ($bookingFlight) {
@@ -99,14 +110,17 @@ class SeatAssignmentService
                 ]);
             }
 
+            // FIX: Update booking with all fees
             $lockedBooking->update([
                 'base_fare' => $newTotal,
-                'total_amount' => $newTotal,
+                'taxes_fees' => $taxesFees,
+                'seat_fee' => $totalSeatExtraFee,
+                'total_amount' => $newTotal + $taxesFees + $totalSeatExtraFee,
             ]);
 
             if ($lockedBooking->payment && in_array($lockedBooking->payment->status, ['pending', 'failed', 'processing'], true)) {
                 $lockedBooking->payment->update([
-                    'amount' => $newTotal,
+                    'amount' => $lockedBooking->total_amount,
                 ]);
             }
         });

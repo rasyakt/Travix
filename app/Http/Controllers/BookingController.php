@@ -281,12 +281,34 @@ class BookingController extends Controller
                                 isset($lockedBooking->payment->payment_details['source']) && 
                                 $lockedBooking->payment->payment_details['source'] === 'api_partner';
 
-                // For regular bookings, check seat assignments
-                if (!$isApiBooking && $lockedBooking->passengers->contains(fn($passenger) => !$passenger->seatAssignment)) {
-                    return [
-                        'type' => 'redirect-seats',
-                        'message' => 'Pilih kursi untuk semua penumpang sebelum pembayaran.',
-                    ];
+                // FIX: For regular bookings, validate inventory availability before payment
+                if (!$isApiBooking) {
+                    // Check seat assignments
+                    if ($lockedBooking->passengers->contains(fn($passenger) => !$passenger->seatAssignment)) {
+                        return [
+                            'type' => 'redirect-seats',
+                            'message' => 'Pilih kursi untuk semua penumpang sebelum pembayaran.',
+                        ];
+                    }
+                    
+                    // FIX: Validate flight inventory is still available
+                    foreach ($lockedBooking->bookingFlights as $bookingFlight) {
+                        $flight = Flight::where('id', $bookingFlight->flight_id)
+                            ->lockForUpdate()
+                            ->first();
+                        
+                        $requiredSeats = (int) ($bookingFlight->passenger_count ?? 1);
+                        
+                        if (!$flight || $flight->available_seats < $requiredSeats) {
+                            // Release current seat assignments
+                            $lockedBooking->seatAssignments()->delete();
+                            
+                            return [
+                                'type' => 'redirect-seats',
+                                'message' => 'Kursi tidak tersedia lagi. Silakan pilih kursi lain.',
+                            ];
+                        }
+                    }
                 }
 
                 if (!$lockedBooking->payment) {
