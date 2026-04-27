@@ -185,8 +185,8 @@
                             App Store
                         </a>
                         <a href="#" class="flex items-center gap-4 border-2 border-white/20 bg-white/5 backdrop-blur-md text-white px-8 py-5 rounded-[24px] font-black text-sm uppercase tracking-widest hover:bg-white/10 transition-all">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M3.609 1.814L13.792 12 3.609 22.186c-.18.18-.344.094-.344-.14V1.954c0-.234.164-.32.344-.14zm11.167 10.186l3.528 2.037c.725.418.725 1.096 0 1.514l-3.528 2.037-2.909-2.859 2.909-2.729zm-4.721 3.292l3.435 3.375-8.083 4.667c-.725.418-1.185.163-1.021-.567l5.669-7.475zm0-6.584l-5.669-7.475c-.164-.73.296-.985 1.021-.567l8.083 4.667-3.435 3.375z" />
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 512 512">
+                                <path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/>
                             </svg>
                             Play Store
                         </a>
