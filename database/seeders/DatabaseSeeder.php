@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             ScheduleSeeder::class,
             FlightSeeder::class,
             FlightSeatPriceSeeder::class,
+            AdminUserSeeder::class,
         ]);
     }
 }

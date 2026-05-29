@@ -23,6 +23,7 @@ class User extends Authenticatable
         'google_token',
         'google_refresh_token',
         'avatar',
+        'role',
     ];
 
     protected $hidden = [
@@ -58,6 +59,11 @@ class User extends Authenticatable
     }
 
     // Accessors
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
     public function getAvatarUrlAttribute()
     {
         if ($this->avatar) {
