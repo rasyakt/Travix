@@ -18,6 +18,7 @@ Route::get('/', function () {
 
 // Auth Routes
 Route::get('/login', [LoginController::class, 'show'])->name('login');
+Route::post('/login', [LoginController::class, 'store']);
 Route::get('/register', [RegisterController::class, 'show'])->name('register');
 Route::post('/register', [RegisterController::class, 'store']);
 Route::get('/auth/google', [SocialiteController::class, 'redirectToGoogle'])->name('login.google');
