@@ -264,14 +264,13 @@
                 </h2>
                 <p class="tv-section-subtitle max-w-2xl mx-auto mt-2">
                     Every detail of our onboard amenities has been crafted to make you feel right at home.
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {{-- Gourmet Catering --}}
                 <div class="tv-card-hover p-6 flex flex-col items-center text-center">
                     <div class="w-14 h-14 rounded-2xl bg-orange-50 text-tv-accent flex items-center justify-center mb-5 shrink-0 shadow-sm">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 17h18M6 17a6 6 0 0112 0M12 5v2m0 0a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
                     </div>
                     <h3 class="font-extrabold text-tv-secondary text-lg mb-3">Gourmet Catering</h3>
                     <p class="text-xs text-tv-muted leading-relaxed font-medium">
@@ -282,7 +281,9 @@
                 {{-- In-Flight Wi-Fi --}}
                 <div class="tv-card-hover p-6 flex flex-col items-center text-center">
                     <div class="w-14 h-14 rounded-2xl bg-blue-50 text-tv-primary flex items-center justify-center mb-5 shrink-0 shadow-sm">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-4.08-7.071a9 9 0 0112.14 0M4.929 7.929a13 13 0 0118.142 0"/></svg>
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5zM8.25 15a5.303 5.303 0 017.5 0M5.25 12a9.546 9.546 0 0113.5 0M2.25 9A13.784 13.784 0 0121.75 9" />
+                        </svg>
                     </div>
                     <h3 class="font-extrabold text-tv-secondary text-lg mb-3">High-Speed Wi-Fi</h3>
                     <p class="text-xs text-tv-muted leading-relaxed font-medium">
@@ -293,7 +294,10 @@
                 {{-- Entertainment --}}
                 <div class="tv-card-hover p-6 flex flex-col items-center text-center">
                     <div class="w-14 h-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-5 shrink-0 shadow-sm">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.91 11.672a.375.375 0 010 .656l-5.603 3.113a.375.375 0 01-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112z" />
+                        </svg>
                     </div>
                     <h3 class="font-extrabold text-tv-secondary text-lg mb-3">Non-Stop Entertainment</h3>
                     <p class="text-xs text-tv-muted leading-relaxed font-medium">
@@ -304,7 +308,9 @@
                 {{-- Lounge Comfort --}}
                 <div class="tv-card-hover p-6 flex flex-col items-center text-center">
                     <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-5 shrink-0 shadow-sm">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0-1.5-1.5-3-3-3h-9c-1.5 0-3 1.5-3 3v6c0 .75.75 1.5 1.5 1.5h12c.75 0 1.5-.75 1.5-1.5v-6zM4.5 10.5h15M7.5 18v3M16.5 18v3" />
+                        </svg>
                     </div>
                     <h3 class="font-extrabold text-tv-secondary text-lg mb-3">Airport Lounges</h3>
                     <p class="text-xs text-tv-muted leading-relaxed font-medium">

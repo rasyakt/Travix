@@ -22,35 +22,112 @@
                     // Assign beautiful themed backgrounds & descriptors based on popular destination codes
                     $cardTheme = match($airport->iata_code) {
                         'DPS' => [
-                            'gradient' => 'from-amber-400 via-orange-500 to-red-600',
+                            'image' => 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80',
                             'badge' => 'Tropical Paradise',
-                            'desc' => 'Immerse yourself in legendary beaches, serene temples, and vibrant cultural rituals.',
+                            'desc' => 'Immerse yourself in legendary beaches, serene Hindu sea temples, and rich artistic culture.',
                             'icon' => '🌴',
                             'tagline' => 'Bali is calling'
                         ],
                         'SIN' => [
-                            'gradient' => 'from-emerald-400 via-teal-500 to-cyan-600',
-                            'badge' => 'Futuristic Metropolis',
-                            'desc' => 'Explore lush garden architecture, premium duty-free shopping, and Michelin dining.',
+                            'image' => 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Futuristic Hub',
+                            'desc' => 'Explore Gardens by the Bay, elite Michelin-starred dining, and luxury airport amenities.',
                             'icon' => '✨',
                             'tagline' => 'Garden City Singapore'
                         ],
                         'CGK' => [
-                            'gradient' => 'from-blue-500 via-indigo-600 to-violet-700',
+                            'image' => 'https://images.unsplash.com/photo-1585837575652-267c041d77d4?auto=format&fit=crop&w=600&q=80',
                             'badge' => 'Dynamic Capital',
                             'desc' => 'Experience the rich heritage, massive skylines, and elite culinary hotspots of Indonesia.',
                             'icon' => '🌆',
                             'tagline' => 'Jakarta Pulse'
                         ],
                         'SUB' => [
-                            'gradient' => 'from-rose-400 via-pink-500 to-red-600',
-                            'badge' => 'Cultural Heritage',
-                            'desc' => 'Discover the historic City of Heroes, premium local coffee, and volcanic adventure gateways.',
+                            'image' => 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Volcanic Gateway',
+                            'desc' => 'Discover the historic City of Heroes and embark on epic hiking gateways to Mount Bromo.',
                             'icon' => '🌋',
                             'tagline' => 'Explore Surabaya'
                         ],
+                        'JOG' => [
+                            'image' => 'https://images.unsplash.com/photo-1584810359583-96fc3448beaa?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Sultanate Heritage',
+                            'desc' => 'Step back in time to the magnificent Prambanan and Borobudur temples, and rich royal batik guilds.',
+                            'icon' => '🕌',
+                            'tagline' => 'Historic Yogyakarta'
+                        ],
+                        'UPG' => [
+                            'image' => 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Coastal Maritime',
+                            'desc' => 'Arrive in the major historical port city of Sulawesi, famous for Losari beach sunsets and seafood.',
+                            'icon' => '🌅',
+                            'tagline' => 'Makassar Gate'
+                        ],
+                        'KNO' => [
+                            'image' => 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Volcanic Lake Wonders',
+                            'desc' => 'Journey from the metropolitan core of Sumatra to the breathtaking volcanic majesty of Lake Toba.',
+                            'icon' => '🏞️',
+                            'tagline' => 'Medan Adventure'
+                        ],
+                        'BDO' => [
+                            'image' => 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Highland Retreat',
+                            'desc' => 'Enjoy cool mountain breezes, rich heritage Art Deco streets, and sprawling tea plantations.',
+                            'icon' => '☕',
+                            'tagline' => 'Paris Van Java'
+                        ],
+                        'PLM' => [
+                            'image' => 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Ancient River Port',
+                            'desc' => 'Home of the legendary Ampera Bridge, Sriwijaya empire heritage, and signature Pempek delicacies.',
+                            'icon' => '🌉',
+                            'tagline' => 'Discover Palembang'
+                        ],
+                        'BTH' => [
+                            'image' => 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Coastal Oasis',
+                            'desc' => 'Relax inside premium beach resorts, fresh seafood harbors, and iconic sea bridge systems.',
+                            'icon' => '⛵',
+                            'tagline' => 'Batam Gateway'
+                        ],
+                        'PKU' => [
+                            'image' => 'https://images.unsplash.com/photo-1540959733332-eab4deceeaf7?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Cultural Crossroads',
+                            'desc' => 'Discover rich Riau-Malay heritage, deep historical mosques, and active river corridors.',
+                            'icon' => '🕌',
+                            'tagline' => 'Explore Pekanbaru'
+                        ],
+                        'KUL' => [
+                            'image' => 'https://images.unsplash.com/photo-1595438596637-2cf3b593673f?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Metropolitan Fusion',
+                            'desc' => 'Gaze at the soaring Petronas Twin Towers, rich culinary street grids, and colonial landmarks.',
+                            'icon' => '🗼',
+                            'tagline' => 'Kuala Lumpur Pulse'
+                        ],
+                        'BKK' => [
+                            'image' => 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Exotic Temples',
+                            'desc' => 'Marvel at the golden Wat Arun temple, vibrant floating markets, and legendary Thai cuisine.',
+                            'icon' => '🕌',
+                            'tagline' => 'Amazing Bangkok'
+                        ],
+                        'HKG' => [
+                            'image' => 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Metropolitan Peak',
+                            'desc' => 'Enjoy breathtaking skyscraper views from Victoria Peak and elite duty-free shopping hubs.',
+                            'icon' => '🌆',
+                            'tagline' => 'Pearl of the Orient'
+                        ],
+                        'DXB' => [
+                            'image' => 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=600&q=80',
+                            'badge' => 'Global Oasis',
+                            'desc' => 'Gaze at the towering Burj Khalifa, luxury desert safari camps, and signature palm islands.',
+                            'icon' => '🐪',
+                            'tagline' => 'Luxurious Dubai'
+                        ],
                         default => [
-                            'gradient' => 'from-sky-400 via-blue-500 to-indigo-600',
+                            'image' => 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=600&q=80',
                             'badge' => 'Global Getaway',
                             'desc' => 'Travel safely with direct routes, premium inflight dining, and high-speed Wi-Fi.',
                             'icon' => '✈️',
@@ -59,23 +136,27 @@
                     };
                 @endphp
 
-                <div class="tv-card-hover overflow-hidden flex flex-col min-h-[420px] bg-white group/dest">
-                    {{-- Visual Header Panel with Gradient Theme --}}
-                    <div class="h-44 shrink-0 bg-linear-to-br {{ $cardTheme['gradient'] }} relative p-6 flex flex-col justify-between text-white overflow-hidden">
-                        {{-- Ambient backdrop decorative shapes --}}
-                        <div class="absolute -right-10 -top-10 w-32 h-32 rounded-full bg-white/10 blur-xl group-hover/dest:scale-125 transition-transform duration-500"></div>
-                        <div class="absolute -left-10 -bottom-10 w-24 h-24 rounded-full bg-white/10 blur-xl"></div>
-                        
-                        <div class="flex items-center justify-between">
-                            <span class="bg-white/20 backdrop-blur-md text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-lg border border-white/20">
+                <div class="tv-card-hover overflow-hidden flex flex-col min-h-[440px] bg-white group/dest">
+                    {{-- Visual Header Panel with Real City Photo --}}
+                    <div class="h-48 shrink-0 relative p-6 flex flex-col justify-between text-white overflow-hidden bg-gray-900">
+                        {{-- Background Image --}}
+                        <img src="{{ $cardTheme['image'] }}" alt="{{ $airport->city }}"
+                            onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=600&q=80';"
+                            class="absolute inset-0 w-full h-full object-cover opacity-75 group-hover/dest:scale-110 transition-transform duration-700 ease-out z-0">
+                        {{-- Deep premium linear gradient overlay to ensure perfect text readability --}}
+                        <div class="absolute inset-0 bg-linear-to-t from-black/85 via-black/40 to-black/20 z-0"></div>
+
+                        {{-- Content elements --}}
+                        <div class="flex items-center justify-between z-10">
+                            <span class="bg-white/20 backdrop-blur-md text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-lg border border-white/25">
                                 {{ $cardTheme['badge'] }}
                             </span>
-                            <span class="text-2xl">{{ $cardTheme['icon'] }}</span>
+                            <span class="text-2xl drop-shadow-md">{{ $cardTheme['icon'] }}</span>
                         </div>
 
-                        <div>
-                            <p class="text-xs font-bold text-white/80 uppercase tracking-widest">{{ $cardTheme['tagline'] }}</p>
-                            <h3 class="text-2xl font-black mt-1 leading-tight">{{ $airport->city }}</h3>
+                        <div class="z-10">
+                            <p class="text-[10px] font-black text-white/90 uppercase tracking-widest drop-shadow-sm">{{ $cardTheme['tagline'] }}</p>
+                            <h3 class="text-2xl font-black mt-0.5 leading-tight drop-shadow-md">{{ $airport->city }}</h3>
                         </div>
                     </div>
 
