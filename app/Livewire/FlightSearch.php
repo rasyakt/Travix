@@ -117,6 +117,20 @@ class FlightSearch extends Component
         $this->destinationSearch = "$city ($iataCode)";
     }
 
+    public function selectPopularRoute($originCode, $destinationCode)
+    {
+        $originCity = $this->getAirportCity($originCode);
+        $destinationCity = $this->getAirportCity($destinationCode);
+        
+        $this->origin = $originCode;
+        $this->originSearch = "$originCity ($originCode)";
+        
+        $this->destination = $destinationCode;
+        $this->destinationSearch = "$destinationCity ($destinationCode)";
+
+        $this->searchFlights();
+    }
+
     public function updatedTripType($value)
     {
         if ($value === 'multi-city') {

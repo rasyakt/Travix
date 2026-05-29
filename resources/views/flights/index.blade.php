@@ -44,8 +44,16 @@
 
     <script>
         function fillRoute(origin, destination) {
-            window.Livewire.find(document.querySelector('[wire\\:id]').getAttribute('wire:id')).set('origin', origin);
-            window.Livewire.find(document.querySelector('[wire\\:id]').getAttribute('wire:id')).set('destination', destination);
+            const componentEl = document.querySelector('[wire\\:id]');
+            if (!componentEl) return;
+            
+            const componentId = componentEl.getAttribute('wire:id');
+            if (window.Livewire) {
+                const component = window.Livewire.find(componentId);
+                if (component) {
+                    component.call('selectPopularRoute', origin, destination);
+                }
+            }
         }
     </script>
 @endsection
