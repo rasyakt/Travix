@@ -73,17 +73,17 @@ class FlightSearch extends Component
         'returnDate.after_or_equal' => 'Harus setelah tanggal berangkat',
     ];
 
-    public function updatedOriginSearch($query)
+    public function updatedOriginSearch(string $query)
     {
         $this->originSuggestions = $this->getAirports($query);
     }
 
-    public function updatedDestinationSearch($query)
+    public function updatedDestinationSearch(string $query)
     {
         $this->destinationSuggestions = $this->getAirports($query);
     }
 
-    protected function getAirports($query)
+    protected function getAirports(string $query)
     {
         if (strlen($query) < 1) {
             return Airport::limit(10)->get()->toArray();
@@ -105,19 +105,19 @@ class FlightSearch extends Component
         return $dbQuery->limit(10)->get()->toArray();
     }
 
-    public function selectOrigin($iataCode, $city)
+    public function selectOrigin(string $iataCode, string $city)
     {
         $this->origin = $iataCode;
         $this->originSearch = "$city ($iataCode)";
     }
 
-    public function selectDestination($iataCode, $city)
+    public function selectDestination(string $iataCode, string $city)
     {
         $this->destination = $iataCode;
         $this->destinationSearch = "$city ($iataCode)";
     }
 
-    public function selectPopularRoute($originCode, $destinationCode)
+    public function selectPopularRoute(string $originCode, string $destinationCode)
     {
         $originCity = $this->getAirportCity($originCode);
         $destinationCity = $this->getAirportCity($destinationCode);
@@ -131,7 +131,7 @@ class FlightSearch extends Component
         $this->searchFlights();
     }
 
-    public function updatedTripType($value)
+    public function updatedTripType(string $value)
     {
         if ($value === 'multi-city') {
             $this->tripType = 'one-way';
@@ -319,7 +319,7 @@ class FlightSearch extends Component
         return $isInternational ? 2000000 : 700000;
     }
 
-    public function changeDate($date)
+    public function changeDate(string $date)
     {
         $this->departureDate = $date;
         $this->searchFlights();
@@ -385,7 +385,7 @@ class FlightSearch extends Component
                         // Price might be in wrong currency or inflated
                         // Apply realistic pricing based on route distance
                         $pricePerPerson = $this->getRealisticPrice($flight);
-                        \Log::warning('API Flight Price Adjusted', [
+                        Log::warning('API Flight Price Adjusted', [
                             'original' => $flight['price'],
                             'adjusted' => $pricePerPerson,
                             'flight' => $flight['flight_number']
@@ -409,7 +409,7 @@ class FlightSearch extends Component
         $this->maxPrice = $prices->max() ?: 5000000;
     }
 
-    protected function formatFlight($flight)
+    protected function formatFlight(Flight $flight)
     {
         $travelClassId = $this->getSeatClassId();
         $classSeatPrice = $flight->relationLoaded('seatPrices')
@@ -437,7 +437,7 @@ class FlightSearch extends Component
         ];
     }
 
-    public function selectFlight($flightId, $flightData = null)
+    public function selectFlight(mixed $flightId, mixed $flightData = null)
     {
         $flightId = (int) $flightId;
 

@@ -23,7 +23,9 @@
                     ['from' => 'SUB', 'to' => 'CGK', 'label' => 'Surabaya → Jakarta'],
                     ['from' => 'DPS', 'to' => 'SIN', 'label' => 'Denpasar → Singapore'],
                 ] as $route)
-                <button onclick="fillRoute('{{ $route['from'] }}', '{{ $route['to'] }}')"
+                <button onclick="fillRoute(this.dataset.from, this.dataset.to)"
+                    data-from="{{ $route['from'] }}"
+                    data-to="{{ $route['to'] }}"
                     class="tv-card-interactive p-4 text-left group">
                     <p class="text-[10px] font-semibold text-[#a0aec0] group-hover:text-tv-primary transition-colors uppercase tracking-wider mb-1">{{ $route['label'] }}</p>
                     <div class="flex items-center gap-2">
