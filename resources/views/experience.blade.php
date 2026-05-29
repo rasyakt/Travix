@@ -73,7 +73,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="bg-gradient-to-br from-blue-50 to-indigo-100/40 rounded-2xl p-6 md:p-8 flex flex-col justify-center min-h-[300px]">
+                    <div class="bg-linear-to-br from-blue-50 to-indigo-100/40 rounded-2xl p-6 md:p-8 flex flex-col justify-center min-h-[300px]">
                         <h3 class="font-extrabold text-tv-secondary mb-4 text-base uppercase tracking-wider">Features Included:</h3>
                         <ul class="space-y-4">
                             <li class="flex items-center gap-3.5 text-sm font-bold text-tv-text">
@@ -125,7 +125,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="bg-gradient-to-br from-orange-50/50 to-orange-100/20 rounded-2xl p-6 md:p-8 flex flex-col justify-center min-h-[300px]">
+                    <div class="bg-linear-to-br from-orange-50/50 to-orange-100/20 rounded-2xl p-6 md:p-8 flex flex-col justify-center min-h-[300px]">
                         <h3 class="font-extrabold text-tv-secondary mb-4 text-base uppercase tracking-wider">Features Included:</h3>
                         <ul class="space-y-4">
                             <li class="flex items-center gap-3.5 text-sm font-bold text-tv-text">
@@ -177,7 +177,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="bg-gradient-to-br from-blue-50/80 to-blue-100/30 rounded-2xl p-6 md:p-8 flex flex-col justify-center min-h-[300px]">
+                    <div class="bg-linear-to-br from-blue-50/80 to-blue-100/30 rounded-2xl p-6 md:p-8 flex flex-col justify-center min-h-[300px]">
                         <h3 class="font-extrabold text-tv-secondary mb-4 text-base uppercase tracking-wider">Features Included:</h3>
                         <ul class="space-y-4">
                             <li class="flex items-center gap-3.5 text-sm font-bold text-tv-text">
@@ -229,7 +229,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="bg-gradient-to-br from-amber-50 to-amber-100/40 rounded-2xl p-6 md:p-8 flex flex-col justify-center min-h-[300px]">
+                    <div class="bg-linear-to-br from-amber-50 to-amber-100/40 rounded-2xl p-6 md:p-8 flex flex-col justify-center min-h-[300px]">
                         <h3 class="font-extrabold text-tv-secondary mb-4 text-base uppercase tracking-wider">Features Included:</h3>
                         <ul class="space-y-4">
                             <li class="flex items-center gap-3.5 text-sm font-bold text-tv-text">

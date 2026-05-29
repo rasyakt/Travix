@@ -61,7 +61,7 @@
 
                 <div class="tv-card-hover overflow-hidden flex flex-col min-h-[420px] bg-white group/dest">
                     {{-- Visual Header Panel with Gradient Theme --}}
-                    <div class="h-44 shrink-0 bg-gradient-to-br {{ $cardTheme['gradient'] }} relative p-6 flex flex-col justify-between text-white overflow-hidden">
+                    <div class="h-44 shrink-0 bg-linear-to-br {{ $cardTheme['gradient'] }} relative p-6 flex flex-col justify-between text-white overflow-hidden">
                         {{-- Ambient backdrop decorative shapes --}}
                         <div class="absolute -right-10 -top-10 w-32 h-32 rounded-full bg-white/10 blur-xl group-hover/dest:scale-125 transition-transform duration-500"></div>
                         <div class="absolute -left-10 -bottom-10 w-24 h-24 rounded-full bg-white/10 blur-xl"></div>
@@ -122,7 +122,7 @@
         </div>
 
         {{-- Business stats bottom banner --}}
-        <div class="mt-24 bg-gradient-to-br from-tv-secondary to-[#041c3a] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
+        <div class="mt-24 bg-linear-to-br from-tv-secondary to-[#041c3a] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
             <div class="absolute -right-20 -bottom-20 opacity-5">
                 <svg class="w-96 h-96" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
             </div>
