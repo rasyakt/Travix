@@ -35,6 +35,8 @@ if (config('payment.provider') === 'midtrans') {
 // Guest Accessible Booking Flow
 Route::get('/flights', [FlightController::class, 'index'])->name('flights.index');
 Route::get('/flights/{id}', [FlightController::class, 'show'])->name('flights.show');
+Route::get('/experience', [FlightController::class, 'experience'])->name('experience');
+Route::get('/destinations', [FlightController::class, 'destinations'])->name('destinations');
 Route::get('/booking/create', [BookingController::class, 'create'])->name('booking.create');
 Route::post('/booking', [BookingController::class, 'store'])->name('booking.store');
 Route::get('/booking/{id}', [BookingController::class, 'show'])->name('booking.show');

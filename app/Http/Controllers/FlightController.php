@@ -29,4 +29,15 @@ class FlightController extends Controller
 
         return view('flights.show', compact('flight', 'flightSeatPrices'));
     }
+
+    public function experience()
+    {
+        return view('experience');
+    }
+
+    public function destinations()
+    {
+        $airports = \App\Models\Airport::orderBy('city', 'asc')->get();
+        return view('destinations', compact('airports'));
+    }
 }

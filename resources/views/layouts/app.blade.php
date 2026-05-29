@@ -34,10 +34,10 @@
                         class="text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 {{ request()->routeIs('flights.*') ? 'text-tv-primary' : 'text-tv-muted hover:text-tv-primary' }}">Book</a>
                     <a href="{{ route('dashboard') }}"
                         class="text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 {{ request()->routeIs('dashboard') ? 'text-tv-primary' : 'text-tv-muted hover:text-tv-primary' }}">Manage</a>
-                    <a href="#"
-                        class="text-[11px] font-black uppercase tracking-[0.2em] text-tv-muted hover:text-tv-primary transition-all duration-300">Experience</a>
-                    <a href="#"
-                        class="text-[11px] font-black uppercase tracking-[0.2em] text-tv-muted hover:text-tv-primary transition-all duration-300">Destinations</a>
+                    <a href="{{ route('experience') }}"
+                        class="text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 {{ request()->routeIs('experience') ? 'text-tv-primary' : 'text-tv-muted hover:text-tv-primary' }}">Experience</a>
+                    <a href="{{ route('destinations') }}"
+                        class="text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 {{ request()->routeIs('destinations') ? 'text-tv-primary' : 'text-tv-muted hover:text-tv-primary' }}">Destinations</a>
                 </div>
 
                 {{-- Right Side Buttons --}}

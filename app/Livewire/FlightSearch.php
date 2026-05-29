@@ -409,7 +409,7 @@ class FlightSearch extends Component
         $this->maxPrice = $prices->max() ?: 5000000;
     }
 
-    protected function formatFlight(Flight $flight)
+    protected function formatFlight($flight)
     {
         $travelClassId = $this->getSeatClassId();
         $classSeatPrice = $flight->relationLoaded('seatPrices')
